@@ -1,0 +1,29 @@
+# Git Ignore
+# Also used by CSpell, Stylelint, and ESLint
+
+# @kitschpatrol/repo-config boilerplate
+.astro/
+.DS_Store
+.env
+.env.*
+!.env.example
+.eslint-config-inspector
+.svelte-kit/
+{tmp,temp}/
+**/*.min.js
+/scratch/
+bower_components/
+build/
+coverage/
+dist/
+node_modules/
+vendor/
+
+# Customizations
+
+# Obsidian
+data.json
+.hotreload
+resources/
+/examples/Demo Vault/.obsidian/workspace.json
+/examples/Demo Vault/.obsidian/plugins/yanki

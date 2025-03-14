@@ -1,0 +1,10 @@
+{
+  "author": "Kitschpatrol",
+  "authorUrl": "https://ericmika.com",
+  "description": "Content-aware automatic note file name management.",
+  "id": "renami",
+  "version": "0.0.0",
+  "isDesktopOnly": true,
+  "minAppVersion": "1.8.9",
+  "name": "Renami"
+}

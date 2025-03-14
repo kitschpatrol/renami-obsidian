@@ -1,0 +1,12 @@
+{
+	"extends": "@kitschpatrol/typescript-config",
+	"compilerOptions": {
+		"target": "es2020",
+		"lib": ["es2021", "DOM", "DOM.Iterable"],
+		"types": ["obsidian-typings"],
+		"downlevelIteration": true,
+		"importHelpers": true
+	},
+	"include": ["**/*", "**/**.*"],
+	"exclude": ["**/dist/", "**/bin/"]
+}

@@ -1,0 +1,12 @@
+# Prettier Ignore
+# Also respects .gitignore
+
+# @kitschpatrol/prettier-config boilerplate
+pnpm-lock.yaml
+package-lock.json
+
+# Customizations
+examples/Demo\ Vault/.obsidian
+
+# Generated file
+manifest.json
