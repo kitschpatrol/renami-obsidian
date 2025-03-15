@@ -2,6 +2,10 @@
 
 <!-- title {titleCase: true, postfix: " Plugin"} -->
 
+# Renami Obsidian Plugin
+
+<!-- /title -->
+
 <!-- badges {
   custom: {
     "GitHub Release": {
@@ -11,9 +15,31 @@
   }
 } -->
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![GitHub Release](https://img.shields.io/github/v/release/kitschpatrol/renami-obsidian?label=Release)](https://github.com/kitschpatrol/renami-obsidian/releases/latest)
+
+<!-- /badges -->
+
 <!-- short-description -->
 
+**An Obsidian plugin for content-aware automatic note name management.**
+
+<!-- /short-description -->
+
 <!-- toc { depth: 2 } -->
+
+## Table of contents
+
+- [Overview](#overview)
+- [Quick start](#quick-start)
+- [Features](#features)
+- [Usage](#usage)
+- [Privacy and security](#privacy-and-security)
+- [Background](#background)
+- [Maintainers](#maintainers)
+- [License](#license)
+
+<!-- /toc -->
 
 ## Overview
 
@@ -87,7 +113,7 @@ File access is implemented with Obsidian's [vault APIs](https://docs.obsidian.md
 
 ### Local logging
 
-For debugging purposes, Renami maintains simple local counters of how many notes have been renamed successfully. Renami doesn't send these statistics anywhere, and they are accessible to you in the [Advanced](#advanced-settings) section of the plugin's setting tab.
+For debugging purposes, Renami maintains simple local counters of how many notes have been renamed successfully. Renami doesn't send these statistics anywhere, and they are accessible to you in the plugin's setting tab.
 
 ## Background
 
