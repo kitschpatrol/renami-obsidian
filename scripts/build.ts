@@ -1,6 +1,7 @@
-import esbuild from 'esbuild'
-import { type Plugin } from 'esbuild'
+import chokidar from 'chokidar'
+import esbuild, { type Plugin } from 'esbuild'
 import { copy } from 'esbuild-plugin-copy'
+import fs from 'node:fs/promises'
 import process from 'node:process'
 
 // We assume our minimum specified Obsidian version 1.8.9 correlates with the
@@ -34,8 +35,6 @@ const context = await esbuild.context({
 	external: [
 		'obsidian',
 		'electron',
-		// 'entities',
-		// 'open',
 		'@codemirror/autocomplete',
 		'@codemirror/collab',
 		'@codemirror/commands',
@@ -47,9 +46,7 @@ const context = await esbuild.context({
 		'@lezer/common',
 		'@lezer/highlight',
 		'@lezer/lr',
-
 		// Node 20 builtins
-		// https://github.com/uncenter/builtin-modules-static/blob/main/lib/v20.js
 		'assert',
 		'assert/strict',
 		'async_hooks',
@@ -106,10 +103,11 @@ const context = await esbuild.context({
 	],
 	format: 'cjs',
 	logLevel: 'error',
-	minify: production,
+	minify: false,
+	// Minify: production,
 	outbase: 'dist',
 	outfile: 'dist/main.js',
-	platform: 'browser',
+	platform: 'node',
 	plugins: [
 		ignoreNodeModulesPlugin,
 		copy({
@@ -121,10 +119,50 @@ const context = await esbuild.context({
 	treeShaking: true,
 })
 
+// Debounce mechanism variables
+// eslint-disable-next-line ts/no-restricted-types, unicorn/no-null
+let rebuildTimeout: NodeJS.Timeout | null = null
+let isRebuilding = false
+
+/**
+ * Trigger a rebuild and copy the generated file to the demo vault.
+ */
+async function triggerRebuild(): Promise<void> {
+	if (isRebuilding) return
+	isRebuilding = true
+	console.log('Rebuilding...')
+	try {
+		await context.rebuild()
+		console.log('Rebuild complete.')
+		console.log('Copying files to demo vault...')
+		await fs.copyFile(
+			'./dist/main.js',
+			'./examples/Renami Demo Vault/.obsidian/plugins/renami/main.js',
+		)
+		console.log('Files copied.')
+	} catch (error) {
+		console.error('Rebuild failed:', error)
+	} finally {
+		isRebuilding = false
+	}
+}
+
 if (production) {
-	await context.rebuild()
+	await triggerRebuild()
 	// eslint-disable-next-line unicorn/no-process-exit
 	process.exit(0)
 } else {
-	await context.watch()
+	// Perform an initial rebuild and copy.
+	await triggerRebuild()
+
+	console.log('Watching for changes using chokidar...')
+	// Set up the file watcher on the 'src' directory, ignoring initial add events.
+	const watcher = chokidar.watch('src', { ignoreInitial: true })
+
+	// On any file change, debounce and trigger a rebuild.
+	watcher.on('all', (event, path) => {
+		console.log(`Detected ${event} on ${path}. Scheduling rebuild...`)
+		if (rebuildTimeout) clearTimeout(rebuildTimeout)
+		rebuildTimeout = setTimeout(triggerRebuild, 100)
+	})
 }

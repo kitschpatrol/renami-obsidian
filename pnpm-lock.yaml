@@ -17,6 +17,9 @@ importers:
       bumpp:
         specifier: ^10.1.0
         version: 10.1.0
+      chokidar:
+        specifier: ^4.0.3
+        version: 4.0.3
       debounce:
         specifier: ^2.2.0
         version: 2.2.0
