@@ -1,11 +1,14 @@
 import { type App, moment, PluginSettingTab, sanitizeHTMLToDom, Setting } from 'obsidian'
+import { loadConfigObject, type RenamiConfig } from 'renami'
 import type RenamiPlugin from '../main'
 import { capitalize, html } from '../utilities'
+
+const placeholderConfig: Partial<RenamiConfig> = { options: {}, rules: [] }
 
 export type RenamiPluginSettings = {
 	autoRenameDebounceIntervalMs: number // Not exposed in settings
 	autoRenameEnabled: boolean
-	configPath: string
+	config: Partial<RenamiConfig>
 	stats: {
 		auto: number
 		duration: number
@@ -21,7 +24,7 @@ export function getRenamiPluginDefaultSettings(): RenamiPluginSettings {
 	return {
 		autoRenameDebounceIntervalMs: 4000,
 		autoRenameEnabled: false,
-		configPath: '/renami.config.ts',
+		config: placeholderConfig,
 		stats: {
 			auto: 0,
 			duration: 0,
@@ -73,19 +76,43 @@ export class RenamiPluginSettingTab extends PluginSettingTab {
 		new Setting(this.containerEl)
 			.setName('Renami config')
 			.setDesc('Path to the Renami configuration file, relative to the vault root.')
-			.addText((text) => {
-				text.setPlaceholder('Config path')
 
-				text.setValue(this.plugin.settings.configPath)
+			.addTextArea((text) => {
+				text.setPlaceholder(JSON.stringify(placeholderConfig, undefined, 2))
+				text.setValue(JSON.stringify(this.plugin.settings.config, undefined, 2))
+
 				text.onChange((value) => {
-					this.plugin.settings.configPath = value.trim().length > 0 ? value.trim() : ''
+					console.log('Renami config changed')
+					try {
+						// Attempt to parse JSON
+						const parsedJson = JSON.parse(value.trim()) as Partial<RenamiConfig>
+
+						// Validate the config
+						const loadedConfig = loadConfigObject(parsedJson)
+						if (loadedConfig === undefined) {
+							throw new Error('Invalid config')
+						}
+
+						// Don't use the merged config, just the user-provided config
+						this.plugin.settings.config = parsedJson
+
+						console.log(parsedJson)
+
+						text.inputEl.removeClass('error')
+					} catch (error) {
+						console.log(error)
+						text.inputEl.addClass('error')
+					}
+
+					// This.render()
 				})
 
 				text.inputEl.addEventListener('blur', async () => {
+					text.inputEl.value = JSON.stringify(this.plugin.settings.config, undefined, 2)
 					await this.plugin.saveSettings()
 				})
 
-				this.render()
+				// This.render()
 			})
 
 		const { latestRenameTime } = this.plugin.settings.stats

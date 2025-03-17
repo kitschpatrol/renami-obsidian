@@ -41,6 +41,10 @@ export default class RenamiPlugin extends Plugin {
 	// Initialization
 
 	async onload() {
+		console.log('----------------------------------')
+
+		console.log('Renami plugin loaded!!')
+
 		// Bindings
 		this.fileAdapterWrite = this.fileAdapterWrite.bind(this)
 		this.fileAdapterRead = this.fileAdapterRead.bind(this)
@@ -132,7 +136,7 @@ export default class RenamiPlugin extends Plugin {
 	 * Certain settings changes should trigger a name update from Renami, (but only fires if auto sync is enabled).
 	 */
 	public async settingsChangeCheck(previousSettings: RenamiPluginSettings) {
-		if (previousSettings.configPath !== this.settings.configPath) {
+		if (previousSettings.config !== this.settings.config) {
 			await this.renameNoteFileNames(false)
 		}
 	}
@@ -209,10 +213,40 @@ export default class RenamiPlugin extends Plugin {
 		// to support resolving wiki links.
 		// const filePaths = files.map((file) => this.vaultPathToAbsolutePath(file.path))
 
+		const workingConfig = structuredClone(this.settings.config)
+
+		if (workingConfig.rules === undefined) {
+			if (userInitiated || this.settings.verboseNotices) {
+				new Notice(
+					sanitizeHTMLToDom(
+						html`<strong
+							>${userInitiated ? '' : 'Automatic '}Renami rename failed because no rules are
+							specified...</strong
+						>`,
+					),
+				)
+			}
+			return
+		}
+
+		for (const rule of workingConfig.rules) {
+			const patternArray = Array.isArray(rule.pattern) ? rule.pattern : [rule.pattern]
+			rule.pattern = patternArray.map((pattern) => {
+				console.log('----------------------------------')
+				console.log(pattern)
+				const newPattern = this.vaultPathToAbsolutePath(pattern)
+				console.log(newPattern)
+				return newPattern
+			})
+		}
+
+		console.log(workingConfig)
+
 		try {
-			const absoluteConfigPath = this.vaultPathToAbsolutePath(this.settings.configPath)
+			// const absolutePattern = this.vaultPathToAbsolutePath('**/*.md')
+
 			const report = await rename({
-				config: absoluteConfigPath,
+				config: workingConfig,
 				// TODO get this from somewhere else?
 				fileAdapter: {
 					readFile: this.fileAdapterRead,
