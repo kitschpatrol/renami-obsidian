@@ -1,5 +1,6 @@
+import type { Plugin } from 'esbuild'
 import chokidar from 'chokidar'
-import esbuild, { type Plugin } from 'esbuild'
+import esbuild from 'esbuild'
 import { copy } from 'esbuild-plugin-copy'
 import fs from 'node:fs/promises'
 import process from 'node:process'
@@ -134,10 +135,22 @@ async function triggerRebuild(): Promise<void> {
 		await context.rebuild()
 		console.log('Rebuild complete.')
 		console.log('Copying files to demo vault...')
-		await fs.copyFile(
-			'./dist/main.js',
-			'./examples/Renami Demo Vault/.obsidian/plugins/renami/main.js',
+
+		await fs.mkdir('./examples/Renami Demo Vault/.obsidian/plugins/renami', { recursive: true })
+		const distributionFiles = await fs.readdir('./dist')
+		for (const file of distributionFiles) {
+			await fs.copyFile(
+				`./dist/${file}`,
+				`./examples/Renami Demo Vault/.obsidian/plugins/renami/${file}`,
+			)
+		}
+
+		// Create or update a .hotreload file in the demo vault to indicate a rebuild has occurred
+		await fs.writeFile(
+			'./examples/Renami Demo Vault/.obsidian/plugins/renami/.hotreload',
+			new Date().toISOString(),
 		)
+
 		console.log('Files copied.')
 	} catch (error) {
 		console.error('Rebuild failed:', error)

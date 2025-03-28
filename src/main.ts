@@ -2,11 +2,8 @@
 /* eslint-disable ts/unbound-method */
 
 import escapeStringRegexp from 'escape-string-regexp'
-import {
-	getRenamiPluginDefaultSettings,
-	type RenamiPluginSettings,
-	RenamiPluginSettingTab,
-} from './settings/settings'
+import type { RenamiPluginSettings } from './settings/settings'
+import { getRenamiPluginDefaultSettings, RenamiPluginSettingTab } from './settings/settings'
 import { formatRenameReport, html, sanitizeHtmlToDomWithFunction } from './utilities'
 
 // An alternate debounce library with a `trigger` method is used instead of the
@@ -16,6 +13,7 @@ import { formatRenameReport, html, sanitizeHtmlToDomWithFunction } from './utili
 // already scheduled at the time of the user-initiated invocation. The import is
 // named with a prefix so there's no ambiguity vs the built-in Obsidian
 // implementation.
+import type { TAbstractFile } from 'obsidian'
 import sindreDebounce from 'debounce'
 import path from 'node:path' // Assuming polyfilled
 import {
@@ -25,12 +23,11 @@ import {
 	Notice,
 	Plugin,
 	sanitizeHTMLToDom,
-	type TAbstractFile,
 	TFile,
 	TFolder,
 	Vault,
 } from 'obsidian'
-import { rename } from 'renami'
+import { renami } from 'renami'
 
 export default class RenamiPlugin extends Plugin {
 	public settings: RenamiPluginSettings = getRenamiPluginDefaultSettings()
@@ -239,15 +236,17 @@ export default class RenamiPlugin extends Plugin {
 		try {
 			// const absolutePattern = this.vaultPathToAbsolutePath('**/*.md')
 
-			const report = await rename({
+			const report = await renami({
 				config: workingConfig,
-				// TODO get this from somewhere else?
 				fileAdapter: {
 					readFile: this.fileAdapterRead,
 					readFileBuffer: this.fileAdapterReadBuffer,
 					rename: this.fileAdapterRename,
 					stat: this.fileAdapterStat,
 					writeFile: this.fileAdapterWrite,
+				},
+				globAdapter: {
+					globMatch: this.globAdapterGlobMatch,
 				},
 			})
 
@@ -351,6 +350,29 @@ export default class RenamiPlugin extends Plugin {
 
 		const vaultFileNewPath = this.absolutePathToVaultPath(newPath)
 		return this.app.vault.rename(file, vaultFileNewPath)
+	}
+
+	// ----------------------------------------------------
+
+	// Glob adapter implementation
+
+	// eslint-disable-next-line ts/require-await
+	async globAdapterGlobMatch(
+		patterns: readonly string[] | string,
+		options?: {
+			/** Whether to return absolute paths or not, default false */
+			absolute?: boolean
+			/** The current working directory to resolve the patterns against, default detected cwd */
+			cwd?: string
+			/** Whether to match only files (not directories), default false */
+			onlyFiles?: boolean
+		},
+	): Promise<string[]> {
+		console.log('TODO')
+		console.log(patterns)
+		console.log(options)
+
+		return []
 	}
 
 	// ----------------------------------------------------

@@ -1,9 +1,21 @@
-import { type App, moment, PluginSettingTab, sanitizeHTMLToDom, Setting } from 'obsidian'
-import { loadConfigObject, type RenamiConfig } from 'renami'
+import type { App } from 'obsidian'
+import type { RenamiConfig } from 'renami'
+import { moment, PluginSettingTab, sanitizeHTMLToDom, Setting } from 'obsidian'
+import { loadConfigObject } from 'renami'
 import type RenamiPlugin from '../main'
 import { capitalize, html, stripFileExtension } from '../utilities'
 
-const placeholderConfig: Partial<RenamiConfig> = { options: {}, rules: [] }
+const placeholderConfig: Partial<RenamiConfig> = {
+	options: {},
+	rules: [
+		{
+			options: {
+				caseType: 'kebab',
+			},
+			pattern: './**/*.md',
+		},
+	],
+}
 
 export type RenamiPluginSettings = {
 	autoRenameDebounceIntervalMs: number // Not exposed in settings
@@ -85,6 +97,10 @@ export class RenamiPluginSettingTab extends PluginSettingTab {
 					console.log('Renami config changed')
 					try {
 						// Attempt to parse JSON
+
+						console.log('----------------------------------')
+						console.log(value.trim())
+
 						const parsedJson = JSON.parse(value.trim()) as Partial<RenamiConfig>
 
 						// Validate the config
