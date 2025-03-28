@@ -231,13 +231,7 @@ export default class RenamiPlugin extends Plugin {
 
 		for (const rule of workingConfig.rules) {
 			const patternArray = Array.isArray(rule.pattern) ? rule.pattern : [rule.pattern]
-			rule.pattern = patternArray.map((pattern) => {
-				console.log('----------------------------------')
-				console.log(pattern)
-				const newPattern = this.vaultPathToAbsolutePath(pattern)
-				console.log(newPattern)
-				return newPattern
-			})
+			rule.pattern = patternArray.map((pattern) => this.vaultPathToAbsolutePath(pattern))
 		}
 
 		console.log(workingConfig)

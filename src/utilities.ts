@@ -1,8 +1,21 @@
+import path from 'node:path'
 import { sanitizeHTMLToDom } from 'obsidian'
 import { type RenameReport } from 'renami'
 
 export type CommonProperties<T, U> = {
 	[K in keyof T & keyof U]: T[K] extends U[K] ? T[K] : never
+}
+
+export function stripFileExtension(fileName: string): string {
+	return path.join(path.dirname(fileName), path.basename(fileName, path.extname(fileName)))
+}
+
+export function addMarkdownExtension(fileName: string): string {
+	if (path.extname(fileName) === '') {
+		return path.join(path.dirname(fileName), path.basename(fileName, '.md'))
+	}
+
+	return fileName
 }
 
 export function formatRenameReport(renameReport: RenameReport): DocumentFragment {

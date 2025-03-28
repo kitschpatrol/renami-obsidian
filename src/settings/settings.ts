@@ -1,7 +1,7 @@
 import { type App, moment, PluginSettingTab, sanitizeHTMLToDom, Setting } from 'obsidian'
 import { loadConfigObject, type RenamiConfig } from 'renami'
 import type RenamiPlugin from '../main'
-import { capitalize, html } from '../utilities'
+import { capitalize, html, stripFileExtension } from '../utilities'
 
 const placeholderConfig: Partial<RenamiConfig> = { options: {}, rules: [] }
 
@@ -76,7 +76,7 @@ export class RenamiPluginSettingTab extends PluginSettingTab {
 		new Setting(this.containerEl)
 			.setName('Renami config')
 			.setDesc('Path to the Renami configuration file, relative to the vault root.')
-
+			.setClass('renami-config')
 			.addTextArea((text) => {
 				text.setPlaceholder(JSON.stringify(placeholderConfig, undefined, 2))
 				text.setValue(JSON.stringify(this.plugin.settings.config, undefined, 2))
@@ -91,6 +91,21 @@ export class RenamiPluginSettingTab extends PluginSettingTab {
 						const loadedConfig = loadConfigObject(parsedJson)
 						if (loadedConfig === undefined) {
 							throw new Error('Invalid config')
+						}
+
+						// Remove file extensions
+						if (parsedJson.rules !== undefined && parsedJson.rules.length > 0) {
+							console.log('----------------------------------')
+							console.log(parsedJson.rules)
+							parsedJson.rules = parsedJson.rules.map((rule) => {
+								if (Array.isArray(rule.pattern)) {
+									rule.pattern = rule.pattern.filter((pattern) => stripFileExtension(pattern))
+								} else if (typeof rule.pattern === 'string') {
+									rule.pattern = stripFileExtension(rule.pattern)
+								}
+
+								return rule
+							})
 						}
 
 						// Don't use the merged config, just the user-provided config
@@ -136,13 +151,14 @@ export class RenamiPluginSettingTab extends PluginSettingTab {
 			)
 			.setClass('description-is-button-annotation')
 
-		new Setting(this.containerEl).setName('Automatic rename').addToggle((toggle) => {
-			toggle.setValue(this.plugin.settings.autoRenameEnabled)
-			toggle.onChange(async (value) => {
-				this.plugin.settings.autoRenameEnabled = value
-				await this.plugin.saveSettings()
-			})
-		})
+		// TODO not yet implemented
+		// new Setting(this.containerEl).setName('Automatic rename').addToggle((toggle) => {
+		// 	toggle.setValue(this.plugin.settings.autoRenameEnabled)
+		// 	toggle.onChange(async (value) => {
+		// 		this.plugin.settings.autoRenameEnabled = value
+		// 		await this.plugin.saveSettings()
+		// 	})
+		// })
 
 		new Setting(this.containerEl).setName('Verbose notices').addToggle((toggle) => {
 			toggle.setValue(this.plugin.settings.verboseNotices)
