@@ -101,8 +101,12 @@ export class RenamiPluginSettingTab extends PluginSettingTab {
 					html`Renami will rename notes in the listed folders according to the associated template
 						strings. Renaming is always recursive, and templates at the bottom of the stack will
 						take precedence over earlier ones matching the same files. See the
-						<a href="https://github.com/kitschpatrol/renami-obsidian">Renami documentation</a>
-						for details on how to format the templates.`,
+						<a href="https://github.com/kitschpatrol/renami-obsidian">Renami documentation</a> and
+						the
+						<a href="https://github.com/syntax-tree/unist-util-select/blob/main/readme.md#support"
+							>Selector documentation</a
+						>
+						for more information on template syntax.`,
 				),
 			)
 
@@ -116,9 +120,6 @@ export class RenamiPluginSettingTab extends PluginSettingTab {
 				forceFallback: true, // Force old-school implementation to fix spill animation
 				handle: '.drag-handle',
 				onEnd: async (event) => {
-					console.log('end ----------------------------------')
-					console.log(event.oldIndex, event.newIndex)
-
 					const { newIndex, oldIndex } = event
 
 					if (oldIndex !== undefined && newIndex !== undefined && oldIndex !== newIndex) {
@@ -225,10 +226,10 @@ export class RenamiPluginSettingTab extends PluginSettingTab {
 
 		updateAddFolderButton()
 
-		// Global options ---------------------------------
+		// Transformations ---------------------------------
 
 		new Setting(this.containerEl)
-			.setName('Global options')
+			.setName('Transformation')
 			.setHeading()
 			.setDesc(sanitizeHTMLToDom(html`These options apply to all templates.`))
 
@@ -267,41 +268,20 @@ export class RenamiPluginSettingTab extends PluginSettingTab {
 		})
 
 		// Everyone should trim...
-		// new Setting(this.containerEl).setName('Trim').addToggle((toggle) => {
-		// 	toggle.setValue(this.plugin.settings.options.trim)
-		// 	toggle.onChange(async (value) => {
-		// 		this.plugin.settings.options.trim = value
-		// 		await this.plugin.saveSettings()
-		// 	})
-		// })
-
-		new Setting(this.containerEl).setName('Collapse delimiters').addToggle((toggle) => {
-			toggle.setValue(this.plugin.settings.options.collapseSurplusDelimiters)
+		new Setting(this.containerEl).setName('Trim').addToggle((toggle) => {
+			toggle.setValue(this.plugin.settings.options.trim)
 			toggle.onChange(async (value) => {
-				this.plugin.settings.options.collapseSurplusDelimiters = value
+				this.plugin.settings.options.trim = value
 				await this.plugin.saveSettings()
 			})
 		})
 
-		new Setting(this.containerEl).setName('Delimiter').addText((text) => {
-			text.setPlaceholder(String(getRenamiPluginDefaultSettings().options.delimiter))
-			text.setValue(String(this.plugin.settings.options.delimiter))
-			text.onChange((value) => {
-				this.plugin.settings.options.delimiter = value
-			})
+		// ----------------------------------------------------
 
-			text.inputEl.addEventListener('blur', async () => {
-				await this.plugin.saveSettings()
-			})
-		})
-
-		new Setting(this.containerEl).setName('Ignore folder notes').addToggle((toggle) => {
-			toggle.setValue(this.plugin.settings.options.ignoreFolderNotes)
-			toggle.onChange(async (value) => {
-				this.plugin.settings.options.ignoreFolderNotes = value
-				await this.plugin.saveSettings()
-			})
-		})
+		new Setting(this.containerEl)
+			.setName('Truncation')
+			.setHeading()
+			.setDesc(sanitizeHTMLToDom(html`TODO more detail. These options apply to all templates.`))
 
 		new Setting(this.containerEl).setName('Maximum length').addText((text) => {
 			text.setPlaceholder(String(getRenamiPluginDefaultSettings().options.maxLength))
@@ -315,7 +295,7 @@ export class RenamiPluginSettingTab extends PluginSettingTab {
 			})
 		})
 
-		new Setting(this.containerEl).setName('Truncation text').addText((text) => {
+		new Setting(this.containerEl).setName('Elision text').addText((text) => {
 			text.setPlaceholder(String(getRenamiPluginDefaultSettings().options.truncationString))
 			text.setValue(String(this.plugin.settings.options.truncationString))
 			text.onChange((value) => {
@@ -327,7 +307,7 @@ export class RenamiPluginSettingTab extends PluginSettingTab {
 			})
 		})
 
-		new Setting(this.containerEl).setName('Truncate on word boundary').addToggle((toggle) => {
+		new Setting(this.containerEl).setName('Find word boundary').addToggle((toggle) => {
 			toggle.setValue(this.plugin.settings.options.truncateOnWordBoundary)
 			toggle.onChange(async (value) => {
 				this.plugin.settings.options.truncateOnWordBoundary = value
@@ -335,10 +315,49 @@ export class RenamiPluginSettingTab extends PluginSettingTab {
 			})
 		})
 
+		// ----------------------------------------------------
+
+		new Setting(this.containerEl)
+			.setName('Delimiters')
+			.setHeading()
+			.setDesc(sanitizeHTMLToDom(html`TODO more detail. These options apply to all templates.`))
+
+		new Setting(this.containerEl).setName('Delimiter text').addText((text) => {
+			text.setPlaceholder(String(getRenamiPluginDefaultSettings().options.delimiter))
+			text.setValue(String(this.plugin.settings.options.delimiter))
+			text.onChange((value) => {
+				this.plugin.settings.options.delimiter = value
+			})
+
+			text.inputEl.addEventListener('blur', async () => {
+				await this.plugin.saveSettings()
+			})
+		})
+
+		new Setting(this.containerEl).setName('Collapse duplicates').addToggle((toggle) => {
+			toggle.setValue(this.plugin.settings.options.collapseSurplusDelimiters)
+			toggle.onChange(async (value) => {
+				this.plugin.settings.options.collapseSurplusDelimiters = value
+				await this.plugin.saveSettings()
+			})
+		})
+
+		// ----------------------------------------------------
+
+		new Setting(this.containerEl).setName('Advanced').setHeading()
+
 		new Setting(this.containerEl).setName('Verbose notices').addToggle((toggle) => {
 			toggle.setValue(this.plugin.settings.verboseNotices)
 			toggle.onChange(async (value) => {
 				this.plugin.settings.verboseNotices = value
+				await this.plugin.saveSettings()
+			})
+		})
+
+		new Setting(this.containerEl).setName('Ignore folder notes').addToggle((toggle) => {
+			toggle.setValue(this.plugin.settings.options.ignoreFolderNotes)
+			toggle.onChange(async (value) => {
+				this.plugin.settings.options.ignoreFolderNotes = value
 				await this.plugin.saveSettings()
 			})
 		})
