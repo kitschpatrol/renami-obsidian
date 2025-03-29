@@ -85,6 +85,7 @@ div.renami-settings {
 			justify-content: flex-end;
 		}
 
+		/* stylelint-disable-next-line no-descending-specificity */
 		div.setting-item-control {
 			flex: none;
 		}

@@ -4,7 +4,13 @@
 import escapeStringRegexp from 'escape-string-regexp'
 import type { RenamiFolder, RenamiPluginSettings } from './settings/settings'
 import { getRenamiPluginDefaultSettings, RenamiPluginSettingTab } from './settings/settings'
-import { formatRenameReport, html, sanitizeHtmlToDomWithFunction } from './utilities'
+import {
+	formatRenameReport,
+	html,
+	objectsEqual,
+	renamiFoldersEqual,
+	sanitizeHtmlToDomWithFunction,
+} from './utilities'
 
 // An alternate debounce library with a `trigger` method is used instead of the
 // Obsidian API's built-in implementation. The `trigger` method allows
@@ -52,9 +58,9 @@ export default class RenamiPlugin extends Plugin {
 
 		this.getWatchedFiles = this.getWatchedFiles.bind(this)
 		this.getSanitizedFolderPaths = this.getSanitizedFolderPaths.bind(this)
+		this.getSanitizedFolders = this.getSanitizedFolders.bind(this)
 
 		this.getVaultBasePath = this.getVaultBasePath.bind(this)
-		this.getAllFilePaths = this.getAllFilePaths.bind(this)
 		this.vaultPathToAbsolutePath = this.vaultPathToAbsolutePath.bind(this)
 		this.absolutePathToVaultPath = this.absolutePathToVaultPath.bind(this)
 
@@ -84,7 +90,7 @@ export default class RenamiPlugin extends Plugin {
 		// Spot any changes since last session
 		// Where is "unregisterEvent"?
 		this.app.workspace.onLayoutReady(async () => {
-			// Sync at startup if auto-sync is enabled...
+			// Rename at startup if auto-rename is enabled...
 			await this.renameNoteFileNames(false)
 			this.registerEvent(this.app.vault.on('create', this.handleCreate.bind(this)))
 		})
@@ -100,17 +106,12 @@ export default class RenamiPlugin extends Plugin {
 	}
 
 	// Typed override
-
 	// eslint-disable-next-line ts/no-restricted-types
 	async loadData(): Promise<null | RenamiPluginSettings> {
 		// eslint-disable-next-line ts/no-restricted-types
 		const settings = (await super.loadData()) as null | RenamiPluginSettings
 		return settings
 	}
-
-	// Nothing to do on unload
-	// onunload() {
-	// }
 
 	// ----------------------------------------------------
 
@@ -131,13 +132,14 @@ export default class RenamiPlugin extends Plugin {
 	/**
 	 * Certain settings changes should trigger a name update from Renami, (but only fires if auto sync is enabled).
 	 */
-	// eslint-disable-next-line ts/require-await
 	public async settingsChangeCheck(previousSettings: RenamiPluginSettings) {
-		// TODO figure out what to do
-		console.log(previousSettings)
-		// if (previousSettings.folder !== this.settings.folder) {
-		// 	await this.renameNoteFileNames(false)
-		// }
+		if (
+			!objectsEqual(previousSettings.options, this.settings.options) ||
+			previousSettings.autoRenameEnabled !== this.settings.autoRenameEnabled ||
+			!renamiFoldersEqual(previousSettings.folders, this.settings.folders)
+		) {
+			await this.renameNoteFileNames(false)
+		}
 	}
 
 	// This never seems to fire, even after manually editing the settings file?
@@ -156,10 +158,10 @@ export default class RenamiPlugin extends Plugin {
 	 * Translates RenamiPluginSettings into a config object for use in the Renami
 	 * library's `renami` function
 	 */
-	private getRenamiConfig(settings: RenamiPluginSettings): RenamiConfig {
+	public getRenamiConfig(settings: RenamiPluginSettings): RenamiConfig {
 		return {
 			options: settings.options,
-			rules: settings.folders.map(({ folderPath, template }) => ({
+			rules: this.getSanitizedFolders().map(({ folderPath, template }) => ({
 				pattern: path.join(this.vaultPathToAbsolutePath(folderPath), '/**/*.md'),
 				transform: template,
 			})),
@@ -172,40 +174,7 @@ export default class RenamiPlugin extends Plugin {
 
 	// ----------------------------------------------------
 
-	// Primary commands
-
-	// public async renameNoteFileNamesInternal(userInitiated: boolean): Promise<void> {
-	// 	if (!this.settings.autoRenameEnabled && !userInitiated) {
-	// 		return
-	// 	}
-
-	// 	const files: TFile[] = this.getWatchedFiles()
-
-	// 	if (files.length === 0) {
-	// 		if (userInitiated || this.settings.verboseNotices) {
-	// 			new Notice(
-	// 				sanitizeHtmlToDomWithFunction(
-	// 					html`<strong>Anki note file rename:</strong><br />No flashcard notes found to rename.
-	// 						Check your flashcard folders in Yanki's <a class="settings">settings tab</a>.`,
-	// 					'settings',
-	// 					this.openSettingsTab,
-	// 				),
-	// 			)
-	// 		}
-
-	// 		return
-	// 	}
-
-	// 	// All watched files as absolute paths
-	// 	// const filePaths = files.map((file) => this.vaultPathToAbsolutePath(file.path))
-	// 	// const report = await renameFiles(filePaths, this.getRenameFilesOptions(this.settings))
-
-	// 	// TODO call renameNoteFileNames
-
-	// 	if (userInitiated || this.settings.verboseNotices) {
-	// 		new Notice(formatRenameReport(report), 5000)
-	// 	}
-	// }
+	// Primary command
 
 	renameNoteFileNames = sindreDebounce(async (userInitiated: boolean): Promise<void> => {
 		if (!userInitiated && !this.settings.autoRenameEnabled) {
@@ -215,20 +184,26 @@ export default class RenamiPlugin extends Plugin {
 		if (userInitiated || this.settings.verboseNotices) {
 			new Notice(
 				sanitizeHTMLToDom(
-					html`<strong>${userInitiated ? '' : 'Automatic '}Renami rename starting...</strong>`,
+					html`<strong>${userInitiated ? '' : 'Automatic '}Renami starting...</strong>`,
 				),
 			)
 		}
 
 		const workingConfig = this.getRenamiConfig(this.settings)
 
+		// TODO development only, remove
+		if (this.settings.verboseNotices) {
+			console.log('Renami config:')
+			console.log(workingConfig)
+		}
+
 		if (workingConfig.rules === undefined || workingConfig.rules.length === 0) {
 			if (userInitiated || this.settings.verboseNotices) {
 				new Notice(
 					sanitizeHTMLToDom(
 						html`<strong
-							>${userInitiated ? '' : 'Automatic '}Renami rename failed because no template rules
-							are specified...</strong
+							>${userInitiated ? '' : 'Automatic '}Renami failed because no template rules are
+							specified...</strong
 						>`,
 					),
 				)
@@ -236,12 +211,9 @@ export default class RenamiPlugin extends Plugin {
 			return
 		}
 
-		console.log('Config: ----------------------------------')
-		console.log(workingConfig)
-
 		try {
 			const report = await renami({
-				config: this.getRenamiConfig(this.settings),
+				config: workingConfig,
 				fileAdapter: {
 					readFile: this.fileAdapterRead,
 					readFileBuffer: this.fileAdapterReadBuffer,
@@ -255,7 +227,7 @@ export default class RenamiPlugin extends Plugin {
 			})
 
 			if (userInitiated || this.settings.verboseNotices) {
-				new Notice(formatRenameReport(report), 15_000)
+				new Notice(formatRenameReport(report, this.settings.verboseNotices), 15_000)
 			}
 
 			// Dev stats
@@ -275,7 +247,7 @@ export default class RenamiPlugin extends Plugin {
 
 			// Always notice on weird errors
 			const fragment = sanitizeHtmlToDomWithFunction(
-				html`<strong>Renami rename failed:</strong>
+				html`<strong>Renami failed:</strong>
 					<pre style="white-space: pre-wrap;">${String(error)}</pre>
 					Please check <a class="settings">the plugin settings</a>, review the
 					<a href="https://github.com/kitschpatrol/renami-obsidian">documentation</a>, and try
@@ -382,23 +354,31 @@ export default class RenamiPlugin extends Plugin {
 
 		const pathWithoutGlob = patterns.replace(/\/\*\*\/\*\.\w+$/, '')
 
-		const filePaths: string[] = []
+		// This is also implemented on the Renami library side, but doing it here
+		// for predictable file counts
+		const { ignoreFolderNotes } = this.settings.options
 
 		const folder = this.app.vault.getAbstractFileByPath(
 			this.absolutePathToVaultPath(pathWithoutGlob),
 		)
 
+		const filePaths = new Set<string>()
+
 		if (folder instanceof TFolder) {
 			Vault.recurseChildren(folder, (file) => {
 				// Only allow at Markdown
 				// Optionally ignore folder notes
-				if (file instanceof TFile && file.extension === 'md') {
-					filePaths.push(options?.absolute ? this.vaultPathToAbsolutePath(file.path) : file.path)
+				if (
+					file instanceof TFile &&
+					file.extension === 'md' &&
+					(!ignoreFolderNotes || file.parent?.name !== file.basename)
+				) {
+					filePaths.add(options?.absolute ? this.vaultPathToAbsolutePath(file.path) : file.path)
 				}
 			})
 		}
 
-		return filePaths
+		return [...filePaths]
 	}
 
 	// ----------------------------------------------------
@@ -413,18 +393,22 @@ export default class RenamiPlugin extends Plugin {
 
 		const watchedFolders = this.getSanitizedFolderPaths()
 		if (watchedFolders.includes(oldPath)) {
-			// TODO would make sense if folder list was maintained in Obsidian instead of renami.config.ts
-			// const updatedFolders = watchedFolders.map((folder) => {
-			// 	if (folder.startsWith(oldPath)) {
-			// 		return fileOrFolder.path + folder.slice(oldPath.length)
-			// 	}
-			// 	return folder
-			// })
-			// this.settings.folders = updatedFolders
-			// await this.saveSettings()
-			// await this.renameNoteFileNames(false)
+			this.settings.folders = this.settings.folders.map(({ folderPath, template }) => {
+				const updatedFolderPath = folderPath.startsWith(oldPath)
+					? fileOrFolder.path + folderPath.slice(oldPath.length)
+					: folderPath
+
+				return {
+					folderPath: updatedFolderPath,
+					template,
+				}
+			})
+
+			await this.saveSettings()
+
+			await this.renameNoteFileNames(false)
 		} else if (this.isInsideWatchedFolders(fileOrFolder)) {
-			//
+			// Nested folder name change
 			await this.renameNoteFileNames(false)
 		}
 	}
@@ -437,19 +421,19 @@ export default class RenamiPlugin extends Plugin {
 	}
 
 	private async handleDelete(fileOrFolder: TAbstractFile) {
-		if (this.isInsideWatchedFolders(fileOrFolder)) {
-			// TODO would make sense if folder list was maintained in Obsidian instead of renami.config.ts
-			// Remove from settings if it was a watched folder
-			// if (fileOrFolder instanceof TFolder) {
-			// 	const watchedFolders = this.getSanitizedFolders()
-			// 	const initialLength = watchedFolders.length
-			// 	this.settings.folders = watchedFolders.filter((folder) => folder !== fileOrFolder.path)
-			// 	if (this.settings.folders.length !== initialLength) {
-			// 		await this.saveSettings()
-			// 	}
-			// }
+		if (
+			this.isInsideWatchedFolders(fileOrFolder) && // Remove from settings if it was a watched folder
+			fileOrFolder instanceof TFolder
+		) {
+			const initialLength = this.settings.folders.length
 
-			await this.renameNoteFileNames(false)
+			this.settings.folders = this.settings.folders.filter(
+				({ folderPath }) => folderPath !== fileOrFolder.path,
+			)
+
+			if (this.settings.folders.length !== initialLength) {
+				await this.saveSettings()
+			}
 		}
 	}
 
@@ -469,10 +453,9 @@ export default class RenamiPlugin extends Plugin {
 	}
 
 	public getWatchedFiles(): TFile[] {
-		// TODO get this from Renami settings...
 		const { ignoreFolderNotes } = this.settings.options
 
-		const files: TFile[] = []
+		const files = new Set<TFile>()
 		for (const folderPath of this.getSanitizedFolderPaths()) {
 			const folder = this.app.vault.getAbstractFileByPath(folderPath)
 
@@ -485,17 +468,23 @@ export default class RenamiPlugin extends Plugin {
 						file.extension === 'md' &&
 						(!ignoreFolderNotes || file.parent?.name !== file.basename)
 					) {
-						files.push(file)
+						files.add(file)
 					}
 				})
 			}
 		}
 
-		return files
+		return [...files]
 	}
 
 	public getSanitizedFolders(): RenamiFolder[] {
 		return this.settings.folders
+			.filter(
+				({ folderPath }) =>
+					// Ignore truly empty folder paths before normalization
+					// Deals with '/' vs ''
+					folderPath.trim().length > 0,
+			)
 			.map(({ folderPath, template }) => ({
 				folderPath: normalizePath(folderPath.trim()),
 				template: template.trim(),
@@ -514,11 +503,6 @@ export default class RenamiPlugin extends Plugin {
 	// ----------------------------------------------------
 
 	// Paths
-
-	private getAllFilePaths(): string[] {
-		const vaultBasePath = this.getVaultBasePath() ?? ''
-		return this.app.vault.getFiles().map((file) => path.join(vaultBasePath, file.path))
-	}
 
 	// Does not have a trailing slash
 	private getVaultBasePath(): string | undefined {
@@ -560,6 +544,7 @@ export default class RenamiPlugin extends Plugin {
 		// Regex escape here addresses
 		// https://github.com/kitschpatrol/yanki-obsidian/issues/28
 		const basePathRegex = new RegExp(`^${escapeStringRegexp(vaultPath)}/?`)
+
 		const resolved = absolutePath.replace(basePathRegex, '')
 
 		// TODO why here but not yanki?

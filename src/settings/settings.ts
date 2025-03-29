@@ -30,7 +30,7 @@ export type RenamiPluginSettings = {
 // TODO bind instead?
 export function getRenamiPluginDefaultSettings(): RenamiPluginSettings {
 	return {
-		autoRenameDebounceIntervalMs: 4000,
+		autoRenameDebounceIntervalMs: 1000,
 		autoRenameEnabled: false,
 		folders: [],
 		options: defaultOptions,
@@ -231,13 +231,13 @@ export class RenamiPluginSettingTab extends PluginSettingTab {
 		new Setting(this.containerEl)
 			.setName('Transformation')
 			.setHeading()
-			.setDesc(sanitizeHTMLToDom(html`These options apply to all templates.`))
+			.setDesc(sanitizeHTMLToDom(html`<em>These options apply to all templates.</em>`))
 
-		// TODO export this from library
 		new Setting(this.containerEl).setName('Case').addDropdown((dropdown) => {
-			/* eslint-disable perfectionist/sort-objects */
 			dropdown
+				/* eslint-disable perfectionist/sort-objects */
 				.addOptions({
+					// TODO export these from library?
 					preserve: 'Preserve',
 					camel: 'camelCase',
 					kebab: 'kebab-case',
@@ -251,12 +251,14 @@ export class RenamiPluginSettingTab extends PluginSettingTab {
 					title: 'Title Case',
 					uppercase: 'UPPERCASE',
 				})
+				/* eslint-enable perfectionist/sort-objects */
+				.setValue(this.plugin.settings.options.caseType)
 				.onChange(async (value) => {
 					this.plugin.settings.options.caseType =
 						value as typeof this.plugin.settings.options.caseType
+
 					await this.plugin.saveSettings()
 				})
-			/* eslint-enable perfectionist/sort-objects */
 		})
 
 		new Setting(this.containerEl).setName('Collapse whitespace').addToggle((toggle) => {
@@ -346,21 +348,115 @@ export class RenamiPluginSettingTab extends PluginSettingTab {
 
 		new Setting(this.containerEl).setName('Advanced').setHeading()
 
-		new Setting(this.containerEl).setName('Verbose notices').addToggle((toggle) => {
-			toggle.setValue(this.plugin.settings.verboseNotices)
-			toggle.onChange(async (value) => {
-				this.plugin.settings.verboseNotices = value
-				await this.plugin.saveSettings()
+		new Setting(this.containerEl)
+			.setName('Automatic rename')
+			.setDesc('Trigger renames when watched files change')
+			.addToggle((toggle) => {
+				toggle.setValue(this.plugin.settings.autoRenameEnabled)
+				toggle.onChange(async (value) => {
+					this.plugin.settings.autoRenameEnabled = value
+					await this.plugin.saveSettings()
+				})
 			})
-		})
 
-		new Setting(this.containerEl).setName('Ignore folder notes').addToggle((toggle) => {
-			toggle.setValue(this.plugin.settings.options.ignoreFolderNotes)
-			toggle.onChange(async (value) => {
-				this.plugin.settings.options.ignoreFolderNotes = value
-				await this.plugin.saveSettings()
+		// Doesn't update live because it's set when plugin is constructed...
+		new Setting(this.containerEl)
+			.setName('Automatic rename delay')
+			.setDesc(
+				'Minimum time between Renami invocations, in milliseconds. Restart Obsidian to apply changes.',
+			)
+			.addText((text) => {
+				text.setPlaceholder(String(getRenamiPluginDefaultSettings().autoRenameDebounceIntervalMs))
+				text.setValue(String(this.plugin.settings.autoRenameDebounceIntervalMs))
+
+				text.inputEl.addEventListener('blur', async () => {
+					const maybeNumber = Number(text.getValue())
+
+					if (!Number.isNaN(maybeNumber)) {
+						console.log(maybeNumber)
+						this.plugin.settings.autoRenameDebounceIntervalMs = Math.clamp(maybeNumber, 100, 10_000)
+					}
+
+					text.setValue(String(this.plugin.settings.autoRenameDebounceIntervalMs))
+					await this.plugin.saveSettings()
+				})
 			})
-		})
+
+		new Setting(this.containerEl)
+			.setName('Ignore folder notes')
+			.setDesc(
+				sanitizeHTMLToDom(
+					html`Exclude notes with the same name as their parent folder from renaming. Useful in
+						combination with the
+						<a href="https://lostpaul.github.io/obsidian-folder-notes/">Folder notes</a> plugin.`,
+				),
+			)
+			.addToggle((toggle) => {
+				toggle.setValue(this.plugin.settings.options.ignoreFolderNotes)
+				toggle.onChange(async (value) => {
+					this.plugin.settings.options.ignoreFolderNotes = value
+					await this.plugin.saveSettings()
+				})
+			})
+
+		new Setting(this.containerEl)
+			.setName('Verbose notices')
+			.setDesc('Extra details on the renaming process, useful for debugging.')
+			.addToggle((toggle) => {
+				toggle.setValue(this.plugin.settings.verboseNotices)
+				toggle.onChange(async (value) => {
+					this.plugin.settings.verboseNotices = value
+					await this.plugin.saveSettings()
+				})
+			})
+
+		new Setting(this.containerEl)
+			.setName('Strict')
+			.setDesc(
+				'Strict idempotence, which will rename files with invalid templates to the default file name if not. When disabled, the original name is preserved when templates fail. */',
+			)
+			.addToggle((toggle) => {
+				toggle.setValue(this.plugin.settings.options.strict)
+				toggle.onChange(async (value) => {
+					this.plugin.settings.options.strict = value
+					await this.plugin.saveSettings()
+				})
+			})
+
+		new Setting(this.containerEl)
+			.setName('Default file name')
+			.setDesc('Fallback name for files with invalid templates when strict mode is enabled.')
+			.addText((text) => {
+				text.setPlaceholder(String(getRenamiPluginDefaultSettings().options.defaultName))
+				text.setValue(String(this.plugin.settings.options.defaultName))
+
+				text.inputEl.addEventListener('blur', async () => {
+					const maybeText = text.getValue()
+
+					if (maybeText !== '') {
+						this.plugin.settings.options.defaultName = maybeText
+					}
+
+					text.setValue(String(this.plugin.settings.options.defaultName))
+					await this.plugin.saveSettings()
+				})
+			})
+
+		new Setting(this.containerEl)
+			.setName('Configuration')
+			.setDesc('Stand-alone Renami JSON configuration.')
+			.addButton((callback) => {
+				callback
+					.setTooltip('Copy configuration to clipboard')
+
+					.setButtonText('Copy')
+					.onClick(async () => {
+						// eslint-disable-next-line node/no-unsupported-features/node-builtins
+						await navigator.clipboard.writeText(
+							JSON.stringify(this.plugin.getRenamiConfig(this.plugin.settings), undefined, 2),
+						)
+					})
+			})
 
 		// Action button ---------------------------------
 
@@ -380,15 +476,6 @@ export class RenamiPluginSettingTab extends PluginSettingTab {
 			.setDesc(sanitizeHTMLToDom(html`Last renamed: <em>${capitalize(syncTime)}</em>`))
 			.setClass('description-is-button-annotation')
 			.setDesc(sanitizeHTMLToDom(html`Last renamed: <em>${capitalize(syncTime)}</em>`))
-
-		// TODO not yet implemented
-		// new Setting(this.containerEl).setName('Automatic rename').addToggle((toggle) => {
-		// 	toggle.setValue(this.plugin.settings.autoRenameEnabled)
-		// 	toggle.onChange(async (value) => {
-		// 		this.plugin.settings.autoRenameEnabled = value
-		// 		await this.plugin.saveSettings()
-		// 	})
-		// })
 
 		// Restore scroll position
 		this.containerEl.scrollTop = scrollPosition

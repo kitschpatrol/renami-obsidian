@@ -2,6 +2,7 @@ import type { RenamiReport } from 'renami'
 import path from 'node:path'
 import { sanitizeHTMLToDom } from 'obsidian'
 import plur from 'plur'
+import type { RenamiFolder } from './settings/settings'
 
 export function stripFileExtension(fileName: string): string {
 	return path.join(path.dirname(fileName), path.basename(fileName, path.extname(fileName)))
@@ -30,8 +31,6 @@ export function formatRenameReport(renameReport: RenamiReport, verbose: boolean)
 			statusReport[status as keyof typeof statusReport]++
 		}
 	}
-	console.log('----------------------------------')
-	console.log(statusReport)
 
 	if (verbose) {
 		// TODO something verbose
@@ -65,6 +64,31 @@ export function objectsEqual<T extends Record<string, unknown> | undefined>(a: T
 
 	for (const key of aKeys) {
 		if (a[key] !== b[key]) return false
+	}
+
+	return true
+}
+
+/**
+ * Checks if two arrays of RenamiFolder objects are identical in both
+ * content and order (sequence equality).
+ * @param a - The first array.
+ * @param b - The second array.
+ * @returns True if the arrays are identical sequences, false otherwise.
+ */
+export function renamiFoldersEqual(a: RenamiFolder[], b: RenamiFolder[]): boolean {
+	if (a.length !== b.length) {
+		return false
+	}
+
+	// Iterate and compare elements at each corresponding index.
+	for (const [i, folderA] of a.entries()) {
+		const folderB = b[i]
+
+		// If properties don't match at any index, return false.
+		if (folderA.folderPath !== folderB.folderPath || folderA.template !== folderB.template) {
+			return false
+		}
 	}
 
 	return true
