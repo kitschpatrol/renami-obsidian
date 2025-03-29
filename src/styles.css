@@ -1,12 +1,84 @@
-div.renami-settings {
-	div.setting-item.renami-config {
-		flex-direction: column;
-		align-items: stretch;
+body:has(.sortable-chosen) * {
+	cursor: grabbing !important;
+	user-select: none;
+}
 
-		div.setting-item-control textarea {
+div.renami-settings {
+	div.search-input-container {
+		width: 100%;
+	}
+
+	div.drag-handle:not(.is-disabled) {
+		cursor: grab;
+	}
+
+	/* Default stylesheet doesn't disable the disabled? */
+	div.clickable-icon.is-disabled {
+		pointer-events: none;
+		opacity: 0.25;
+	}
+
+	/* Hide border */
+	div.sortable-drag {
+		border: none;
+	}
+
+	/* Hide children only so border still draws */
+	div.sortable-ghost > div {
+		visibility: hidden; /* Hide the ghost element when dragging */
+	}
+
+	/* Keep the line length reasonable */
+	div.setting-item-description {
+		max-width: 70ch;
+	}
+
+	/* Folder grid */
+	div.folder-setting {
+		div.setting-item-control {
+			display: grid;
+			grid-auto-flow: column;
+			grid-template: 1fr 1fr / min-content 1fr min-content;
+
+			div.drag-handle,
+			div.delete-button {
+				grid-row: 1 / span 2;
+				align-self: stretch;
+			}
+		}
+	}
+
+	/* Lay out sync stats */
+	div.stats {
+		div.setting-item-info {
 			width: 100%;
-			height: 300px;
-			margin-top: 1em;
+
+			div.setting-item-description {
+				display: grid;
+				grid-template-columns: 1fr 1fr;
+
+				p {
+					margin: 0;
+					font-weight: bold;
+				}
+			}
+		}
+	}
+
+	/* No line above reset buttons */
+	div.stats-reset {
+		border-top: none;
+	}
+
+	/* Keep button annotations to the right */
+	div.setting-item.description-is-button-annotation {
+		div.setting-item-info {
+			display: flex;
+			justify-content: flex-end;
+		}
+
+		div.setting-item-control {
+			flex: none;
 		}
 	}
 }

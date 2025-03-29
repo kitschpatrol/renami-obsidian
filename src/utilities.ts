@@ -1,10 +1,7 @@
 import type { RenamiReport } from 'renami'
 import path from 'node:path'
 import { sanitizeHTMLToDom } from 'obsidian'
-
-export type CommonProperties<T, U> = {
-	[K in keyof T & keyof U]: T[K] extends U[K] ? T[K] : never
-}
+import plur from 'plur'
 
 export function stripFileExtension(fileName: string): string {
 	return path.join(path.dirname(fileName), path.basename(fileName, path.extname(fileName)))
@@ -18,24 +15,43 @@ export function addMarkdownExtension(fileName: string): string {
 	return fileName
 }
 
-export function formatRenameReport(renameReport: RenamiReport): DocumentFragment {
-	console.log(renameReport)
-	// const { notes } = renameReport
+export function formatRenameReport(renameReport: RenamiReport, verbose: boolean): DocumentFragment {
+	const files = renameReport.rules.flatMap(({ report }) => report.files)
 
-	// const renameCount = notes.filter(
-	// 	({ filePath, filePathOriginal }) => filePath !== filePathOriginal,
-	// ).length
+	const statusReport = {
+		conflict: 0,
+		error: 0,
+		renamed: 0,
+		unchanged: 0,
+	}
 
-	// if (renameCount > 0) {
-	// 	return sanitizeHTMLToDom(
-	// 		html`<strong>Renami note file rename:</strong><br />${renameCount} local
-	// 			${plur('note', renameCount)} renamed.`,
-	// 	)
-	// }
+	for (const { status } of files) {
+		if (status in statusReport) {
+			statusReport[status as keyof typeof statusReport]++
+		}
+	}
+	console.log('----------------------------------')
+	console.log(statusReport)
 
-	return sanitizeHTMLToDom(
-		html`<strong>Renami note file rename:</strong><br />All local note names are already correct.`,
-	)
+	if (verbose) {
+		// TODO something verbose
+	}
+
+	if (statusReport.unchanged === files.length) {
+		return sanitizeHTMLToDom(
+			html`<strong>Renami:</strong><br />All note names are already correct.<br />
+				${statusReport.unchanged} / ${files.length} ${plur('note', files.length)} unchanged.`,
+		)
+	}
+
+	if (statusReport.renamed > 0) {
+		return sanitizeHTMLToDom(
+			html`<strong>Renami:</strong><br />${statusReport.renamed} / ${files.length}
+				${plur('note', files.length)} renamed.`,
+		)
+	}
+
+	return sanitizeHTMLToDom(html`<strong>Renami:</strong><br />Failed, details TK.`)
 }
 
 export function objectsEqual<T extends Record<string, unknown> | undefined>(a: T, b: T): boolean {
