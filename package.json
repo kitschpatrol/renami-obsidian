@@ -30,6 +30,7 @@
 		"dev": "rimraf ./dist && pnpm run manifest && tsx ./scripts/build.ts",
 		"fix": "kpi fix",
 		"lint": "kpi lint",
+		"local-deploy": "cp -r ./dist/* /Users/mika/Notes/Vault/.obsidian/plugins/renami",
 		"manifest": "tsx ./scripts/generate-manifest.ts",
 		"release": "pnpm run manifest && bumpp package.json manifest.json --commit 'Release: %s' --tag '%s'",
 		"renami:use-local": "pnpm remove renami ; pnpm add -D ../renami",
