@@ -161,8 +161,8 @@ export class RenamiPluginSettingTab extends PluginSettingTab {
 
 					callback.inputEl.addEventListener('blur', async () => {
 						await this.plugin.saveSettings()
-						// Kludge for label re-rendering without focus-stealing
-						// full-rerender
+						// Kludge for label re-rendering without a focus-stealing full
+						// re-render
 						updateAddFolderButton()
 					})
 				})
@@ -179,8 +179,8 @@ export class RenamiPluginSettingTab extends PluginSettingTab {
 
 				callback.inputEl.addEventListener('blur', async () => {
 					await this.plugin.saveSettings()
-					// Kludge for label re-rendering without focus-stealing
-					// full-rerender
+					// Kludge for label re-rendering without a focus-stealing full
+					// re-render
 					updateAddFolderButton()
 				})
 			})

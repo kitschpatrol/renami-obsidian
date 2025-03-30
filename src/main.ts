@@ -326,7 +326,7 @@ export default class RenamiPlugin extends Plugin {
 
 		const vaultFileNewPath = this.absolutePathToVaultPath(newPath)
 
-		// This does NOT update links
+		// The vault API does NOT update links
 		// https://forum.obsidian.md/t/enable-auto-renaming-links-in-obsidian-api/63842/4
 		// return this.app.vault.rename(file, vaultFileNewPath)
 		return this.app.fileManager.renameFile(file, vaultFileNewPath)

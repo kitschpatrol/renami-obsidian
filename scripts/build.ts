@@ -107,7 +107,7 @@ const context = await esbuild.context({
 	minify: production,
 	outbase: 'dist',
 	outfile: 'dist/main.js',
-	platform: 'node',
+	platform: 'browser',
 	plugins: [
 		ignoreNodeModulesPlugin,
 		copy({
