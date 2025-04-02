@@ -57,9 +57,9 @@ It provides extensively customizable, per-folder, template-based rules that can 
 
    Renami is not currently available in Obsidian's community plugin registry. Download the [latest version from GitHub](https://github.com/kitschpatrol/renami-obsidian/releases/latest) and unzip it into your vault's `.obsidian/plugins` folder. Then restart Obsidian.
 
-3. **Setup**
+3. **Configure**
 
-   TK
+   Open the Renami settings tab in Obsidian, pick a folder you'd like to manage with Renami, and define a template string for the filenames in that folder. (See the [Settings](#settings) section for more details.)
 
 4. **Rename**
 
@@ -135,30 +135,26 @@ For this reason, I'm trying to ensure that the tools I write for my own workflow
 
 There are lots of handy filename-related plugins available for Obsidian, but many are highly specialized.
 
-I've linked to some below, and where applicable shown how to write a Renami transformer to do the same thing.
+I've linked to some below, and, where applicable, shown the Renami template string that does the same thing.
 
 - [Filename Heading Sync](https://github.com/dvcrn/obsidian-filename-heading-sync)
 
   _Keep the filename with the first heading of a file in sync._
 
-  ```ts
-  markdownTemplate('{heading}')
-  ```
+  Filename Heading Sync does bidirectional sync — Renami only syncs from file content → file name. Nevertheless, you can replicate that half of the plugin's behavior with the following Renami template:
 
-- [Filename Emoji Remover](https://github.com/YTolun/obsidian-filename-emoji-remover)
-
-  _Automatically remove emojis from filenames._
-
-  ```ts
-  // TODO
+  ```plaintext
+  {{heading}}
   ```
 
 - [Auto Filename](https://github.com/rcsaquino/obsidian-auto-filename)
 
   _Automatically rename files on the go based on the first x characters of files._
 
-  ```ts
-  // TODO
+  To replicate this in Renami, combine the "all" selector with the truncation option to get the first `X` characters of the file content you'd like to use as the filename.
+
+  ```plaintext
+  {{*|20}}
   ```
 
 - [Safe Filename Linter](https://github.com/sneaky-foxes/obsidian-safe-filename-linter)
@@ -173,43 +169,43 @@ I've linked to some below, and where applicable shown how to write a Renami tran
 
   This plugin only changes the _display_ of the filename in Obsidian, not the actual filename.
 
-  To change the actual filename in Renami to match the `title` field in frontmatter, you'd use:
+  To change the actual filename in Renami to match the `title` field in frontmatter, you'd use the following template:
 
-  ```ts
-  markdownFrontmatter('{title}')
+  ```plaintext
+  {title}
   ```
 
 - [Copy Metadata](https://github.com/wenlzhang/obsidian-copy-metadata)
 
   _Copy file metadata, e.g., creation time, to clipboard. Insert copied metadata to file name._
 
-  ```ts
-  // TODO
+  The lower-level stand-alone [Renami](https://github.com/kitschpatrol/renami) CLI tool / library could do this sort of thing directly. In Obsidian, you could use the [obsidian-frontmatter-modified-date](https://github.com/alangrainger/obsidian-frontmatter-modified-date) plugin or similar to put the modification time in the file's frontmatter, and then use Renami to set the filename from the frontmatter field. If the frontmatter key where the modification date is stored is named `modified`, then the Renami template is as simple as:
+
+  ```plaintext
+  {modified}
   ```
 
 - [Vault File Renamer](https://github.com/louanfontenele/obsidian-vault-file-renamer)
 
   _Automatically standardizes file names to GitHub style while preserving folder structure and file contents._
 
-  ```ts
-  // TODO
+  In Renami, you can set the [Case](#settings) setting to "slug-case", and use an empty template string to preserve the existing filename while slug-ifying the filename. (Renami uses [github-slugger](https://github.com/Flet/github-slugger), which should match GitHub's style.)
+
+  ```plaintext
+  {}
   ```
 
 - [Bulk Rename](https://github.com/OlegLustenko/obsidian-bulk-rename)
 
   _Rename files based on a pattern._
 
-  ```ts
-  // TODO
-  ```
-
 - [Title Generator](https://github.com/jaschaephraim/obsidian-title-generator)
 
   _Quickly and easily title your notes using OpenAI's GPT-3.5._
 
-  ```ts
-  // TODO
-  ```
+- [Filename Emoji Remover](https://github.com/YTolun/obsidian-filename-emoji-remover)
+
+  _Automatically remove emojis from filenames._
 
 ## Maintainers
 
