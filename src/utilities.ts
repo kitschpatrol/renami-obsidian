@@ -1,20 +1,7 @@
 import type { RenamiReport } from 'renami'
-import path from 'node:path'
 import { sanitizeHTMLToDom } from 'obsidian'
 import plur from 'plur'
 import type { RenamiFolder } from './settings/settings'
-
-export function stripFileExtension(fileName: string): string {
-	return path.join(path.dirname(fileName), path.basename(fileName, path.extname(fileName)))
-}
-
-export function addMarkdownExtension(fileName: string): string {
-	if (path.extname(fileName) === '') {
-		return path.join(path.dirname(fileName), path.basename(fileName, '.md'))
-	}
-
-	return fileName
-}
 
 export function formatRenameReport(renameReport: RenamiReport, verbose: boolean): DocumentFragment {
 	const files = renameReport.rules.flatMap(({ report }) => report.files)
@@ -89,18 +76,6 @@ export function renamiFoldersEqual(a: RenamiFolder[], b: RenamiFolder[]): boolea
 		if (folderA.folderPath !== folderB.folderPath || folderA.template !== folderB.template) {
 			return false
 		}
-	}
-
-	return true
-}
-
-export function arraysEqual<T extends undefined | unknown[]>(a: T, b: T): boolean {
-	if (a === b) return true
-	if (a === undefined || b === undefined) return false
-	if (a.length !== b.length) return false
-
-	for (const [i, element] of a.entries()) {
-		if (element !== b[i]) return false
 	}
 
 	return true
