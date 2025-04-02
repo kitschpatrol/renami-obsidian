@@ -26,6 +26,17 @@
 
 <!-- /short-description -->
 
+> [!IMPORTANT]
+>
+> Renami is in early development and specifically targets the author's niche
+> use-cases.
+>
+> It is not yet available in Obsidian's community plugin registry,
+> and must be installed manually if you want to use it.
+>
+> The plugin will remain
+> zero-versioned until it's reasonably safe and intuitive to use. Caveat emptor.
+
 <!-- toc { depth: 2 } -->
 
 ## Table of contents
@@ -45,7 +56,7 @@
 
 Renami is a plugin for Obsidian that dynamically updates your notes' file names based on their content or other rules.
 
-It provides extensively customizable, per-folder, template-based rules that can easily generate file names based on Markdown content or frontmatter values.
+It provides extensively customizable, per-folder, template-based rules that can easily generate Obsidian note file names based on their content or property (frontmatter) values.
 
 ## Quick start
 
@@ -67,35 +78,216 @@ It provides extensively customizable, per-folder, template-based rules that can 
 
 ## Features
 
-TK
+- Name notes based on property fields (Markdown frontmatter) via simple string-based templates
+- Name notes based on specific chunks of content like a `# Heading` with flexible [CSS-like query selectors](https://github.com/syntax-tree/unist-util-select)
+- Format numbers and dates in your note names
+- Enforce consistent case styles, e.g., `kebab-case`, `Title Case`, etc.
+- Enforce maximum note name lengths (with customizable elision strings `...`, and smart truncation on word boundaries)
+- Automatic note name collision resolution with numeric increments
+- Optional "Automatic rename" mode that runs Renami whenever your notes change
 
 ## Usage
 
 ### Commands
 
-The Renami plugin provides a single command:
+The Renami plugin provides a single command, which will rename all notes in the folders specified in the settings tab according to your template string:
 
 **`Renami: Update note filenames`**
 
 ### Settings
 
-#### Config file path
+### Templates
 
-TK
+Renami will rename notes in the listed folders according to the associated template strings. Renaming is always recursive, and templates defined lower in the list will take precedence over earlier ones matching the same files.
 
-#### Verbose notices
+You can define multiple folder + template pairs. Use the drag handle (`:::`) to reorder rows, and the `X` to delete a row. Click the "Add folder" to add a new pair.
 
-Enable to see additional details when file renaming occurs.
+#### Folder path
 
-_Default: Disabled_
+Specify the folder to watch in your vault. Renaming applies recursively to all sub-folders unless overridden by a rule below it that matches the same path. Start typing to get suggestions.
+
+#### Template string
+
+A template defining how to generate the filename.
+
+##### Syntax
+
+Single braces, `{` and `}`, surround accessors to the file's frontmatter object about the file, e.g. `{title}` or `Meeting about {tags[0]}`.
+
+Double braces, `{{` and `}}`, surround [selector queries](https://github.com/syntax-tree/unist-util-select/blob/main/readme.md#selectselector-tree) to the AST associated with the file, e.g. `{{heading}}`.
+
+Single and double braces may contain `|` characters to delimit basic per-placeholder inline transformation commands. More details below in the Inline formatting section.
+
+Strings outside of braces are treated as literal text.
+
+If no object or selection path can be resolved inside brackets, then an empty string `''` is returned at that position.
+
+Example of a template string for a folder full of meeting notes:
+
+```plaintext
+{Date|yyyy-MM-dd} - {Client} - {Project} - {Subject}
+```
+
+(This assumes that each note has `Date`, `Client`, `Project` and `Subject` properties.)
+
+##### Inline formatting
+
+Within either singe or double brace template keywords, an optional `|` character may be followed with a string to perform keyword-specific formatting. The interpolator will make a best-effort attempt to process the resolved value based on the string provided after the `|`. Multiple formatters may be chained.
+
+Given a string template like `{key|format}`, the `format` string will be tested for a match against the following rules, in order:
+
+###### Case changes
+
+If the format string is a case type name, the content of the template key will be transformed accordingly. this may be overruled by the "global" case [Transformation](#transformation) setting.
+
+`Note - {title|uppercase}` → `Note - TITLE FROM FRONTMATTER`
+
+Supported strings are `'camel'`, `'kebab'`, `'lowercase'`, `'pascal'`, `'preserve'`, `'screaming-kebab'`, `'screaming-snake'`, `'sentence'`, `'slug'`, `'snake'`, `'title'`, `'uppercase'`.
+
+##### Number formatting
+
+Next, Renami will attempt to parse the resolved value as a number and format it according to the [numerable](https://github.com/gastonmesseri/numerable) library's format syntax. (Similar to formats specified by [TR35](https://unicode.org/reports/tr35/tr35-numbers.html#Number_Format_Patterns) / [ICU 67](https://github.com/unicode-org/icu/blob/main/docs/userguide/format_parse/numbers/skeletons.md).)
+
+If the `count` property is `22000`, then:
+
+`I have {count|0,0}` → `22,000`
+
+##### Date formatting
+
+Next, it will attempt to parse the resolved value as a date and format it, using [patterns](https://date-fns.org/v4.1.0/docs/format) based on [Unicode Technical Standard #35](https://unicode.org/reports/tr35/tr35-dates.html#Date_Format_Patterns). (See [here](https://toolboxpro.app/blog/unicode-cheatsheet) for a nice reference.)
+
+`'My Note about {{heading}} - {date|yyyy-MM-dd}'` → `My Note about Stuff - 2025-03-15`
+
+#### Max length
+
+Passing a positive integer will truncate the resolved value to a specific character length.
+
+If the `title` property is `This is a very long title`, then:
+
+`'Note - {title|5}'` → `This...`
+
+_If none of the above value / format string combinations are valid, then the format string is ignored and the resolved value is returned as-is._
+
+### Transformation
+
+_These options apply globally to all templates._
+
+#### Case
+
+Determines the character case of the generated filename.
+
+_Default: `Preserve`_
+
+Available options:
+
+- Preserve - _Keep the original case of the filename._
+- camelCase
+- kebab-case
+- lowercase
+- PascalCase
+- SCREAMING-KEBAB
+- SCREAMING_SNAKE
+- Sentence case
+- slug - _Convert to a URL-friendly slug._
+- snake_case
+- Title Case
+- UPPERCASE
+
+##### Collapse whitespace
+
+_Note: In the current code snippet provided, this setting appears to control the same underlying value (`verboseNotices`) as the "Verbose notices" setting under Advanced. This might be unintended._
+Enable to reduce sequences of multiple whitespace characters into a single space in the generated filename.
+
+_Default: Disabled_ (Based on the default `verboseNotices` value)
+
+##### Trim
+
+Enable to remove leading and trailing whitespace from the generated filename.
+
+_Default: Enabled_
+
+#### Truncation
+
+_These options apply globally to all templates and control how long filenames are handled._
+
+##### Maximum length
+
+Sets the maximum number of characters allowed in the generated filename (excluding the `.md` extension).
+
+_Default: `255`_
+
+##### Elision text
+
+The string used to indicate that a filename has been truncated (e.g., "..."). This string counts towards the maximum length.
+
+_Default: `...`_
+
+##### Find word boundary
+
+When enabled, the maximum length cut-off will occur at the nearest word boundary _before_ the maximum length is reached, preventing words from being cut off mid-way. If disabled, truncation happens exactly at the maximum length.
+
+_Default: Enabled_
+
+#### Delimiters
+
+_These options apply globally to all templates and control the characters used between extracted parts of the filename._
+
+##### Delimiter text
+
+The character(s) used to join different parts selected by the template string.
+
+_Default: `-`_
+
+##### Collapse duplicates
+
+Reduce multiple consecutive delimiter characters (resulting from empty template parts or adjacent delimiters in the template) into a single delimiter.
+
+_Default: Enabled_
+
+#### Advanced
 
 ##### Automatic rename
 
-When enabled, Renami will observe the notes specified in your config file for changes and trigger a rename (almost) immediately after it sees a change.
-
-When disabled, syncing must be initiated manually either via [a command](#commands) or the "Rename now" button in the settings tab.
+When enabled, Renami will monitor the notes specified in the Templates section and trigger a rename almost immediately after detecting a change that might affect the filename. When disabled, renaming must be initiated manually via a command or the "Rename now" button.
 
 _Default: Disabled_
+
+##### Automatic rename delay
+
+The minimum time (in milliseconds) that must pass between automatic rename checks after a file change is detected. This prevents excessive renaming triggers during rapid edits. Obsidian must be restarted for changes to this setting to take effect.
+
+_Default: `1000`_
+
+##### Ignore folder notes
+
+Exclude notes that have the exact same name as their parent folder (e.g., `FolderA/FolderA.md`) from the renaming process. This is useful when using plugins like [Folder notes](https://lostpaul.github.io/obsidian-folder-notes/).
+
+_Default: Disabled_
+
+##### Verbose notices
+
+Enable to see additional details (via Obsidian notices) during the renaming process, which can be helpful for debugging templates.
+
+_Default: Disabled_
+
+##### Strict
+
+Enables strict idempotence. If a template fails to generate a valid name for a file:
+
+- When Strict mode is **enabled**, the file will be renamed to the the default file name value (see below).
+- When Strict mode is **disabled**, the file's original name will be preserved if the template fails.
+
+_Default: Disabled_
+
+##### Default file name
+
+The fallback filename used for notes when "Strict" mode is enabled and the template fails to produce a valid name.
+
+_Default: `Untitled`_
+
+##### Configuration
+
+Copies the underlying stand-alone Renami library configuration generated from the current plugin settings to the clipboard.
 
 ## Privacy and security
 
@@ -107,8 +299,6 @@ Note that Obsidian itself may send date to other networks, such as synchronizati
 
 ### File access
 
-Renami might access files outside of your vault if you configure `pattern` globs to do so.
-
 File access is implemented with Obsidian's [vault APIs](https://docs.obsidian.md/Reference/TypeScript+API/Vault).
 
 ### Local logging
@@ -119,9 +309,9 @@ For debugging purposes, Renami maintains simple local counters of how many notes
 
 ### Implementation notes
 
-The Renami plugin is built on [`renami`](https://github.com/kitschpatrol/renami). All functionality not specifically related to Obsidian is managed under the [`renami`](https://github.com/kitschpatrol/renami) project repository, including automated tests and additional documentation.
+The Renami Obsidian plugin is built on [Renami](https://github.com/kitschpatrol/renami). All functionality not specifically related to Obsidian is managed under the [Renami](https://github.com/kitschpatrol/renami) project repository, including automated tests and additional documentation.
 
-If you want to rename files like the Renami Obsidian plugin does from outside of Obsidian, the stand-alone [`renami`](https://github.com/kitschpatrol/renami) CLI tool and TypeScript library implements all of the same core features.
+If you want to rename files like the Renami Obsidian plugin does from outside of Obsidian, the stand-alone [`renami`](https://github.com/kitschpatrol/renami) CLI tool and TypeScript library implements all of the same core features and also exposes a more powerful configuration model that lets you easily write custom template logic in TypeScript or JavaScript.
 
 ### Avoiding lock-in
 
@@ -151,7 +341,7 @@ I've linked to some below, and, where applicable, shown the Renami template stri
 
   _Automatically rename files on the go based on the first x characters of files._
 
-  To replicate this in Renami, combine the "all" selector with the truncation option to get the first `X` characters of the file content you'd like to use as the filename.
+  To replicate this in Renami, combine the "all" selector with the inline or global max-length option to get the first `X` characters of the file content you'd like to use as the filename.
 
   ```plaintext
   {{*|20}}
@@ -189,7 +379,7 @@ I've linked to some below, and, where applicable, shown the Renami template stri
 
   _Automatically standardizes file names to GitHub style while preserving folder structure and file contents._
 
-  In Renami, you can set the [Case](#settings) setting to "slug-case", and use an empty template string to preserve the existing filename while slug-ifying the filename. (Renami uses [github-slugger](https://github.com/Flet/github-slugger), which should match GitHub's style.)
+  In Renami, you can set the [Case](#settings) setting to "slug-case", and use an empty template string to preserve the existing filename while slugifying the filename. (Renami uses [github-slugger](https://github.com/Flet/github-slugger), which should match GitHub's style.)
 
   ```plaintext
   {}

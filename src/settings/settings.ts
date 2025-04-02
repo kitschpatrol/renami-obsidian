@@ -246,7 +246,7 @@ export class RenamiPluginSettingTab extends PluginSettingTab {
 					'screaming-kebab': 'SCREAMING-KEBAB',
 					'screaming-snake': 'SCREAMING_SNAKE',
 					sentence: 'Sentence case',
-					slug: 'slug-case',
+					slug: 'slug',
 					snake: 'snake_case',
 					title: 'Title Case',
 					uppercase: 'UPPERCASE',

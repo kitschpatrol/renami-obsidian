@@ -1,5 +1,5 @@
 import { cspellConfig } from '@kitschpatrol/cspell-config'
 
 export default cspellConfig({
-	words: ['renami', 'renamer', 'outbase', 'hotreload'],
+	words: ['renami', 'renamer', 'outbase', 'hotreload', 'slugifying'],
 })
