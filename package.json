@@ -48,17 +48,17 @@
 		"escape-string-regexp": "^5.0.0",
 		"moment": "^2.30.1",
 		"obsidian": "latest",
-		"obsidian-typings": "^2.41.4",
+		"obsidian-typings": "^2.44.3",
 		"plur": "^5.1.0",
 		"renami": "link:../renami",
 		"rimraf": "^6.0.1",
 		"sortablejs": "^1.15.6",
 		"tslib": "^2.8.1",
 		"tsx": "^4.19.3",
-		"type-fest": "^4.39.0",
-		"typescript": "~5.8.2"
+		"type-fest": "^4.40.0",
+		"typescript": "~5.8.3"
 	},
-	"packageManager": "pnpm@10.7.1",
+	"packageManager": "pnpm@10.8.1",
 	"engines": {
 		"node": ">=20.18.3"
 	},
