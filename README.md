@@ -56,7 +56,7 @@
 
 Renami is a plugin for Obsidian that dynamically updates your notes' file names based on their content or other rules.
 
-It provides extensively customizable, per-folder, template-based rules that can easily generate Obsidian note file names based on their content or property (frontmatter) values.
+It provides extensively customizable, per-folder, template-based rules that can easily set Obsidian note file names based on their content or property (Markdown frontmatter) values.
 
 ## Quick start
 
@@ -112,11 +112,11 @@ A template defining how to generate the filename.
 
 ##### Syntax
 
-Single braces, `{` and `}`, surround accessors to the file's frontmatter object about the file, e.g. `{title}` or `Meeting about {tags[0]}`.
+Single braces, `{` and `}`, surround accessors to the note's properties object (frontmatter), e.g. `{title}` or `Meeting about {tags[0]}`.
 
-Double braces, `{{` and `}}`, surround [selector queries](https://github.com/syntax-tree/unist-util-select/blob/main/readme.md#selectselector-tree) to the AST associated with the file, e.g. `{{heading}}`.
+Double braces, `{{` and `}}`, surround [selector queries](https://github.com/syntax-tree/unist-util-select/blob/main/readme.md#selectselector-tree) to the Markdown AST associated with the file, e.g. `{{heading}}`.
 
-Single and double braces may contain `|` characters to delimit basic per-placeholder inline transformation commands. More details below in the Inline formatting section.
+Single and double braces may also contain `|` characters to delimit basic per-placeholder inline transformation commands. More details below in the Inline formatting section.
 
 Strings outside of braces are treated as literal text.
 
@@ -142,7 +142,7 @@ If the format string is a case type name, the content of the template key will b
 
 `Note - {title|uppercase}` → `Note - TITLE FROM FRONTMATTER`
 
-Supported strings are `'camel'`, `'kebab'`, `'lowercase'`, `'pascal'`, `'preserve'`, `'screaming-kebab'`, `'screaming-snake'`, `'sentence'`, `'slug'`, `'snake'`, `'title'`, `'uppercase'`.
+Supported strings are `'camel'`, `'kebab'`, `'lowercase'`, `'pascal'`, `'preserve'`, `'screaming-kebab'`, `'screaming-snake'`, `'sentence'`, `'slug'`, `'snake'`, `'title'`, and `'uppercase'`.
 
 ##### Number formatting
 
