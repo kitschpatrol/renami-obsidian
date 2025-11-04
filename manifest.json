@@ -5,6 +5,6 @@
   "id": "renami",
   "version": "0.0.0",
   "isDesktopOnly": true,
-  "minAppVersion": "1.8.9",
+  "minAppVersion": "1.9.14",
   "name": "Renami"
 }

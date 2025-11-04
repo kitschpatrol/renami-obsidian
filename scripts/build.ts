@@ -7,9 +7,9 @@ import process from 'node:process'
 
 // We assume our minimum specified Obsidian version 1.8.9 correlates with the
 // following:
-//   - https://github.com/obsidianmd/obsidian-releases/releases/tag/v1.8.9
-//   - https://releases.electronjs.org/release/v34.3.0
-// This release is using Electron 34.3.0, Chromium 132.0.6834.210, V8 13.2.152.41-electron.0, and Node 20.18.3
+//   - https://github.com/obsidianmd/obsidian-releases/releases/tag/v1.9.14
+//   - https://releases.electronjs.org/release/v37.6.0
+// This release is using Electron 37.6.0 , Chromium 138.0.7204.251, V8 13.8.258.32, and Node 22.19.0
 
 const banner = `/*
 This is a generated source file!

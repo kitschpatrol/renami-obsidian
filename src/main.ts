@@ -108,7 +108,7 @@ export default class RenamiPlugin extends Plugin {
 	// Typed override
 	// eslint-disable-next-line ts/no-restricted-types
 	async loadData(): Promise<null | RenamiPluginSettings> {
-		// eslint-disable-next-line ts/no-restricted-types
+		// eslint-disable-next-line ts/no-restricted-types, ts/no-unsafe-type-assertion
 		const settings = (await super.loadData()) as null | RenamiPluginSettings
 		return settings
 	}

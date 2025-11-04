@@ -15,6 +15,7 @@ export function formatRenameReport(renameReport: RenamiReport, verbose: boolean)
 
 	for (const { status } of files) {
 		if (status in statusReport) {
+			// eslint-disable-next-line ts/no-unsafe-type-assertion
 			statusReport[status as keyof typeof statusReport]++
 		}
 	}

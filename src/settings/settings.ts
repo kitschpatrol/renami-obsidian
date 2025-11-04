@@ -255,6 +255,7 @@ export class RenamiPluginSettingTab extends PluginSettingTab {
 				.setValue(this.plugin.settings.options.caseType)
 				.onChange(async (value) => {
 					this.plugin.settings.options.caseType =
+						// eslint-disable-next-line ts/no-unsafe-type-assertion
 						value as typeof this.plugin.settings.options.caseType
 
 					await this.plugin.saveSettings()
@@ -298,8 +299,8 @@ export class RenamiPluginSettingTab extends PluginSettingTab {
 		})
 
 		new Setting(this.containerEl).setName('Elision text').addText((text) => {
-			text.setPlaceholder(String(getRenamiPluginDefaultSettings().options.truncationString))
-			text.setValue(String(this.plugin.settings.options.truncationString))
+			text.setPlaceholder(getRenamiPluginDefaultSettings().options.truncationString)
+			text.setValue(this.plugin.settings.options.truncationString)
 			text.onChange((value) => {
 				this.plugin.settings.options.truncationString = value
 			})
@@ -325,8 +326,8 @@ export class RenamiPluginSettingTab extends PluginSettingTab {
 			.setDesc(sanitizeHTMLToDom(html`TODO more detail. These options apply to all templates.`))
 
 		new Setting(this.containerEl).setName('Delimiter text').addText((text) => {
-			text.setPlaceholder(String(getRenamiPluginDefaultSettings().options.delimiter))
-			text.setValue(String(this.plugin.settings.options.delimiter))
+			text.setPlaceholder(getRenamiPluginDefaultSettings().options.delimiter)
+			text.setValue(this.plugin.settings.options.delimiter)
 			text.onChange((value) => {
 				this.plugin.settings.options.delimiter = value
 			})
@@ -427,8 +428,8 @@ export class RenamiPluginSettingTab extends PluginSettingTab {
 			.setName('Default file name')
 			.setDesc('Fallback name for files with invalid templates when strict mode is enabled.')
 			.addText((text) => {
-				text.setPlaceholder(String(getRenamiPluginDefaultSettings().options.defaultName))
-				text.setValue(String(this.plugin.settings.options.defaultName))
+				text.setPlaceholder(getRenamiPluginDefaultSettings().options.defaultName)
+				text.setValue(this.plugin.settings.options.defaultName)
 
 				text.inputEl.addEventListener('blur', async () => {
 					const maybeText = text.getValue()
@@ -437,7 +438,7 @@ export class RenamiPluginSettingTab extends PluginSettingTab {
 						this.plugin.settings.options.defaultName = maybeText
 					}
 
-					text.setValue(String(this.plugin.settings.options.defaultName))
+					text.setValue(this.plugin.settings.options.defaultName)
 					await this.plugin.saveSettings()
 				})
 			})
