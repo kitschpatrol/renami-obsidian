@@ -3,7 +3,7 @@
   "authorUrl": "https://ericmika.com",
   "description": "Content-aware automatic note file name management.",
   "id": "renami",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "isDesktopOnly": true,
   "minAppVersion": "1.12.4",
   "name": "Renami"
