@@ -1,4 +1,4 @@
-import type { RenamiReport } from 'renami'
+import type { RenamiReport } from '@kitschpatrol/renami'
 import { sanitizeHTMLToDom } from 'obsidian'
 import plur from 'plur'
 import type { RenamiFolder } from './settings/settings'

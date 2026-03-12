@@ -19,8 +19,9 @@ import {
 // already scheduled at the time of the user-initiated invocation. The import is
 // named with a prefix so there's no ambiguity vs the built-in Obsidian
 // implementation.
+import type { RenamiConfig } from '@kitschpatrol/renami'
 import type { TAbstractFile } from 'obsidian'
-import type { RenamiConfig } from 'renami'
+import { renami } from '@kitschpatrol/renami'
 import sindreDebounce from 'debounce'
 import path from 'node:path' // Assuming polyfilled
 import {
@@ -34,7 +35,6 @@ import {
 	TFolder,
 	Vault,
 } from 'obsidian'
-import { renami } from 'renami'
 
 export default class RenamiPlugin extends Plugin {
 	public settings: RenamiPluginSettings = getRenamiPluginDefaultSettings()

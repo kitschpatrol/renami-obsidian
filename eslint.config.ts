@@ -9,7 +9,10 @@ export default eslintConfig(
 		},
 		ignores: ['examples/Renami Demo Vault/*'],
 		json: {
+			// We're not actually publishing an NPM package...
 			overrides: {
+				'json-package/require-files': 'off',
+				'json-package/require-sideEffects': 'off',
 				'json-package/valid-package-definition': 'off',
 			},
 		},

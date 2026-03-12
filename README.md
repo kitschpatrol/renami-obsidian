@@ -7,6 +7,7 @@
 <!-- /title -->
 
 <!-- badges {
+  npm: [],
   custom: {
     "GitHub Release": {
       image: "https://img.shields.io/github/v/release/kitschpatrol/renami-obsidian?label=Release",
@@ -28,14 +29,11 @@
 
 > [!IMPORTANT]
 >
-> Renami is in early development and specifically targets the author's niche
-> use-cases.
+> Renami is in early development and specifically targets the author's niche use-cases.
 >
-> It is not yet available in Obsidian's community plugin registry,
-> and must be installed manually if you want to use it.
+> It is not yet available in Obsidian's community plugin registry, and must be installed manually if you want to use it.
 >
-> The plugin will remain
-> zero-versioned until it's reasonably safe and intuitive to use. Caveat emptor.
+> The plugin will remain zero-versioned until it's reasonably safe and intuitive to use. Caveat emptor.
 
 <!-- toc { depth: 2 } -->
 
