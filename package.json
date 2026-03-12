@@ -66,7 +66,7 @@
 		"description": "Content-aware automatic note file name management.",
 		"id": "renami",
 		"isDesktopOnly": true,
-		"minAppVersion": "1.9.14",
+		"minAppVersion": "1.12.4",
 		"name": "Renami"
 	}
 }

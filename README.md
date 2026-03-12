@@ -31,7 +31,7 @@
 >
 > Renami is in early development and specifically targets the author's niche use-cases.
 >
-> It is not yet available in Obsidian's community plugin registry, and must be installed manually if you want to use it.
+> It is not yet (and might never be) available in Obsidian's community plugin registry, and must be installed manually if you want to use it.
 >
 > The plugin will remain zero-versioned until it's reasonably safe and intuitive to use. Caveat emptor.
 
@@ -60,7 +60,7 @@ It provides extensively customizable, per-folder, template-based rules that can 
 
 1. **Prerequisites**
 
-   The [Obsidian desktop application](https://obsidian.md/download). (The Renami Obsidian plugin has been tested with Obsidian 1.8.9+ on macOS.)
+   The [Obsidian desktop application](https://obsidian.md/download). (The Renami Obsidian plugin has been tested with Obsidian 1.12.4+ on macOS.)
 
 2. **Plugin installation**
 
