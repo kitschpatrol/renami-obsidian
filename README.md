@@ -31,7 +31,7 @@
 >
 > Renami is in early development and specifically targets the author's niche use-cases.
 >
-> It is not yet (and might never be) available in Obsidian's community plugin registry, and must be installed manually if you want to use it.
+> **It is not yet (and might never be) available in Obsidian's community plugin registry, and must be installed manually if you want to use it.**
 >
 > The plugin will remain zero-versioned until it's reasonably safe and intuitive to use. Caveat emptor.
 
@@ -399,6 +399,8 @@ I've linked to some below, and, where applicable, shown the Renami template stri
   _Automatically remove emojis from filenames._
 
   Renami automatically strips invalid filename characters via [filenamify](https://github.com/sindresorhus/filenamify), but emojis are valid filename characters and are not removed. A custom transform function in the stand-alone [Renami](https://github.com/kitschpatrol/renami) library could handle this.
+
+  If you want to associate emojis with your notes without polluting the actual file names, I'd suggest looking at the [iconize](https://florianwoelki.github.io/obsidian-iconize/) plugin.
 
 ## Maintainers
 
