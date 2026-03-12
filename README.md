@@ -72,7 +72,7 @@ It provides extensively customizable, per-folder, template-based rules that can 
 
 4. **Rename**
 
-   Initiate a sync from Obsidian to Anki using the `Renami: Update note filenames` command. You can also trigger a sync manually via the button in the Renami settings tab.
+   Run the `Renami: Update note file names` command to rename your notes. You can also trigger a rename manually via the button in the Renami settings tab.
 
 ## Features
 
@@ -90,15 +90,15 @@ It provides extensively customizable, per-folder, template-based rules that can 
 
 The Renami plugin provides a single command, which will rename all notes in the folders specified in the settings tab according to your template string:
 
-**`Renami: Update note filenames`**
+**`Renami: Update note file names`**
 
 ### Settings
 
-### Templates
+#### Templates
 
 Renami will rename notes in the listed folders according to the associated template strings. Renaming is always recursive, and templates defined lower in the list will take precedence over earlier ones matching the same files.
 
-You can define multiple folder + template pairs. Use the drag handle (`:::`) to reorder rows, and the `X` to delete a row. Click the "Add folder" to add a new pair.
+You can define multiple folder + template pairs. Use the drag handle (`:::`) to reorder rows, and the `X` to delete a row. Click the "Add folder" button to add a new pair.
 
 #### Folder path
 
@@ -126,17 +126,17 @@ Example of a template string for a folder full of meeting notes:
 {Date|yyyy-MM-dd} - {Client} - {Project} - {Subject}
 ```
 
-(This assumes that each note has `Date`, `Client`, `Project` and `Subject` properties.)
+(This assumes that each note has `Date`, `Client`, `Project`, and `Subject` properties.)
 
 ##### Inline formatting
 
-Within either singe or double brace template keywords, an optional `|` character may be followed with a string to perform keyword-specific formatting. The interpolator will make a best-effort attempt to process the resolved value based on the string provided after the `|`. Multiple formatters may be chained.
+Within either single or double brace template keywords, an optional `|` character may be followed with a string to perform keyword-specific formatting. The interpolator will make a best-effort attempt to process the resolved value based on the string provided after the `|`. Multiple formatters may be chained.
 
 Given a string template like `{key|format}`, the `format` string will be tested for a match against the following rules, in order:
 
-###### Case changes
+##### Case changes
 
-If the format string is a case type name, the content of the template key will be transformed accordingly. this may be overruled by the "global" case [Transformation](#transformation) setting.
+If the format string is a case type name, the content of the template key will be transformed accordingly. This may be overruled by the "global" case [Transformation](#transformation) setting.
 
 `Note - {title|uppercase}` → `Note - TITLE FROM FRONTMATTER`
 
@@ -148,7 +148,7 @@ Next, Renami will attempt to parse the resolved value as a number and format it 
 
 If the `count` property is `22000`, then:
 
-`I have {count|0,0}` → `22,000`
+`I have {count|0,0}` → `I have 22,000`
 
 ##### Date formatting
 
@@ -156,13 +156,13 @@ Next, it will attempt to parse the resolved value as a date and format it, using
 
 `'My Note about {{heading}} - {date|yyyy-MM-dd}'` → `My Note about Stuff - 2025-03-15`
 
-#### Max length
+##### Max length
 
 Passing a positive integer will truncate the resolved value to a specific character length.
 
 If the `title` property is `This is a very long title`, then:
 
-`'Note - {title|5}'` → `This...`
+`'Note - {title|5}'` → `Note - This...`
 
 _If none of the above value / format string combinations are valid, then the format string is ignored and the resolved value is returned as-is._
 
@@ -191,14 +191,13 @@ Available options:
 - Title Case
 - UPPERCASE
 
-##### Collapse whitespace
+#### Collapse whitespace
 
-_Note: In the current code snippet provided, this setting appears to control the same underlying value (`verboseNotices`) as the "Verbose notices" setting under Advanced. This might be unintended._
 Enable to reduce sequences of multiple whitespace characters into a single space in the generated filename.
 
-_Default: Disabled_ (Based on the default `verboseNotices` value)
+_Default: Disabled_
 
-##### Trim
+#### Trim
 
 Enable to remove leading and trailing whitespace from the generated filename.
 
@@ -272,7 +271,7 @@ _Default: Disabled_
 
 Enables strict idempotence. If a template fails to generate a valid name for a file:
 
-- When Strict mode is **enabled**, the file will be renamed to the the default file name value (see below).
+- When Strict mode is **enabled**, the file will be renamed to the default file name value (see below).
 - When Strict mode is **disabled**, the file's original name will be preserved if the template fails.
 
 _Default: Disabled_
@@ -293,7 +292,7 @@ Copies the underlying stand-alone Renami library configuration generated from th
 
 Renami does not make any network calls.
 
-Note that Obsidian itself may send date to other networks, such as synchronization services like [Obsidian Sync](https://obsidian.md/sync). Please see Obsidian's [terms](https://obsidian.md/terms) and [privacy policy](https://obsidian.md/privacy) for more details.
+Note that Obsidian itself may send data to other networks, such as synchronization services like [Obsidian Sync](https://obsidian.md/sync). Please see Obsidian's [terms](https://obsidian.md/terms) and [privacy policy](https://obsidian.md/privacy) for more details.
 
 ### File access
 
@@ -309,7 +308,7 @@ For debugging purposes, Renami maintains simple local counters of how many notes
 
 The Renami Obsidian plugin is built on [Renami](https://github.com/kitschpatrol/renami). All functionality not specifically related to Obsidian is managed under the [Renami](https://github.com/kitschpatrol/renami) project repository, including automated tests and additional documentation.
 
-If you want to rename files like the Renami Obsidian plugin does from outside of Obsidian, the stand-alone [`renami`](https://github.com/kitschpatrol/renami) CLI tool and TypeScript library implements all of the same core features and also exposes a more powerful configuration model that lets you easily write custom template logic in TypeScript or JavaScript.
+If you want to rename files like the Renami Obsidian plugin does from outside of Obsidian, the stand-alone [`renami`](https://github.com/kitschpatrol/renami) CLI tool and TypeScript library implement all of the same core features and also expose a more powerful configuration model that lets you easily write custom template logic in TypeScript or JavaScript.
 
 ### Avoiding lock-in
 
@@ -325,7 +324,7 @@ There are lots of handy filename-related plugins available for Obsidian, but man
 
 I've linked to some below, and, where applicable, shown the Renami template string that does the same thing.
 
-- [Filename Heading Sync](https://github.com/dvcrn/obsidian-filename-heading-sync)
+- [Filename Heading Sync](https://github.com/dvcrn/obsidian-filename-heading-sync) ([Plugin](https://obsidian.md/plugins?id=obsidian-filename-heading-sync))
 
   _Keep the filename with the first heading of a file in sync._
 
@@ -335,7 +334,7 @@ I've linked to some below, and, where applicable, shown the Renami template stri
   {{heading}}
   ```
 
-- [Auto Filename](https://github.com/rcsaquino/obsidian-auto-filename)
+- [Auto Filename](https://github.com/rcsaquino/obsidian-auto-filename) ([Plugin](https://obsidian.md/plugins?id=auto-filename))
 
   _Automatically rename files on the go based on the first x characters of files._
 
@@ -345,13 +344,13 @@ I've linked to some below, and, where applicable, shown the Renami template stri
   {{*|20}}
   ```
 
-- [Safe Filename Linter](https://github.com/sneaky-foxes/obsidian-safe-filename-linter)
+- [Safe Filename Linter](https://github.com/sneaky-foxes/obsidian-safe-filename-linter) ([Plugin](https://obsidian.md/plugins?id=safe-filename-linter))
 
   _Lint filenames for invalid or troublesome characters._
 
   Renami does this automatically on any file it touches via the [filenamify](https://github.com/sindresorhus/filenamify) library.
 
-- [Front Matter Title](https://github.com/snezhig/obsidian-front-matter-title)
+- [Front Matter Title](https://github.com/snezhig/obsidian-front-matter-title) ([Plugin](https://obsidian.md/plugins?id=obsidian-front-matter-title-plugin))
 
   _Define a title in frontmatter to be displayed as the filename._
 
@@ -363,7 +362,7 @@ I've linked to some below, and, where applicable, shown the Renami template stri
   {title}
   ```
 
-- [Copy Metadata](https://github.com/wenlzhang/obsidian-copy-metadata)
+- [Copy Metadata](https://github.com/wenlzhang/obsidian-copy-metadata) ([Plugin](https://obsidian.md/plugins?id=copy-metadata))
 
   _Copy file metadata, e.g., creation time, to clipboard. Insert copied metadata to file name._
 
@@ -373,27 +372,33 @@ I've linked to some below, and, where applicable, shown the Renami template stri
   {modified}
   ```
 
-- [Vault File Renamer](https://github.com/louanfontenele/obsidian-vault-file-renamer)
+- [Vault File Renamer](https://github.com/louanfontenele/obsidian-vault-file-renamer) ([Plugin](https://obsidian.md/plugins?id=vault-file-renamer))
 
   _Automatically standardizes file names to GitHub style while preserving folder structure and file contents._
 
-  In Renami, you can set the [Case](#settings) setting to "slug-case", and use an empty template string to preserve the existing filename while slugifying the filename. (Renami uses [github-slugger](https://github.com/Flet/github-slugger), which should match GitHub's style.)
+  In Renami, you can set the [Case](#case) setting to "slug", and use an empty template string to preserve the existing filename while slugifying the filename. (Renami uses [github-slugger](https://github.com/Flet/github-slugger), which should match GitHub's style.)
 
   ```plaintext
   {}
   ```
 
-- [Bulk Rename](https://github.com/OlegLustenko/obsidian-bulk-rename)
+- [Bulk Rename](https://github.com/OlegLustenko/obsidian-bulk-rename) ([Plugin](https://obsidian.md/plugins?id=obsidian-bulk-rename-plugin))
 
   _Rename files based on a pattern._
 
-- [Title Generator](https://github.com/jaschaephraim/obsidian-title-generator)
+  Bulk Rename operates on existing filenames via find-and-replace patterns, which is a different approach from Renami's content-to-filename generation. No direct Renami template equivalent in the Obsidian plugin, but the stand-alone [Renami](https://github.com/kitschpatrol/renami) library's [custom transform functions](https://github.com/kitschpatrol/renami#custom-transforms) receive the current filename and could implement similar logic.
+
+- [Title Generator](https://github.com/jaschaephraim/obsidian-title-generator) ([Plugin](https://obsidian.md/plugins?id=title-generator))
 
   _Quickly and easily title your notes using OpenAI's GPT-3.5._
 
-- [Filename Emoji Remover](https://github.com/YTolun/obsidian-filename-emoji-remover)
+  Renami does not have AI integration. However, a custom transform function in the stand-alone [Renami](https://github.com/kitschpatrol/renami) library could call an external API to generate titles.
+
+- [Filename Emoji Remover](https://github.com/YTolun/obsidian-filename-emoji-remover) ([Plugin](https://obsidian.md/plugins?id=obsidian-filename-emoji-remover))
 
   _Automatically remove emojis from filenames._
+
+  Renami automatically strips invalid filename characters via [filenamify](https://github.com/sindresorhus/filenamify), but emojis are valid filename characters and are not removed. A custom transform function in the stand-alone [Renami](https://github.com/kitschpatrol/renami) library could handle this.
 
 ## Maintainers
 

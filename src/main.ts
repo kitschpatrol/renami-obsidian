@@ -101,7 +101,7 @@ export default class RenamiPlugin extends Plugin {
 		// Still necessary in case notes are dragged in
 		this.registerEvent(this.app.vault.on('modify', this.handleModify.bind(this)))
 
-		// Only look at folders, which can affect deck names
+		// Only look at folders, which can affect file names
 		this.registerEvent(this.app.vault.on('rename', this.handleRename.bind(this)))
 	}
 
@@ -191,7 +191,7 @@ export default class RenamiPlugin extends Plugin {
 
 		const workingConfig = this.getRenamiConfig(this.settings)
 
-		// TODO development only, remove
+		// Remove this before publishing to Obsidian plugin registry
 		if (this.settings.verboseNotices) {
 			console.log('Renami config:')
 			console.log(workingConfig)

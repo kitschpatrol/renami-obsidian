@@ -38,7 +38,10 @@ export function formatRenameReport(renameReport: RenamiReport, verbose: boolean)
 		)
 	}
 
-	return sanitizeHTMLToDom(html`<strong>Renami:</strong><br />Failed, details TK.`)
+	return sanitizeHTMLToDom(
+		html`<strong>Renami:</strong><br />${statusReport.error} ${plur('error', statusReport.error)},
+			${statusReport.conflict} ${plur('conflict', statusReport.conflict)}. No notes were renamed.`,
+	)
 }
 
 export function objectsEqual<T extends Record<string, unknown> | undefined>(a: T, b: T): boolean {
@@ -112,28 +115,4 @@ export function html(strings: TemplateStringsArray, ...values: unknown[]): strin
 		'',
 	)
 	return conjoined.replaceAll(/\s+/g, ' ')
-}
-
-/**
- * Alternate HTML templating function.
- @todo test why this is breaking notice formatting
- @public
- */
-export function htmlNew(strings: TemplateStringsArray, ...values: unknown[]): string {
-	return trimLeadingIndentation(strings, ...values)
-}
-
-function trimLeadingIndentation(strings: TemplateStringsArray, ...values: unknown[]): string {
-	const lines = strings
-		// eslint-disable-next-line ts/no-base-to-string, unicorn/no-array-reduce
-		.reduce((result, text, i) => `${result}${text}${String(values[i] ?? '')}`, '')
-		.split(/\r?\n/)
-		.filter((line) => line.trim() !== '')
-
-	// Get leading white space of first line, and trim that much white space
-	// from subsequent lines
-	// eslint-disable-next-line regexp/no-unused-capturing-group
-	const leadingSpace = /^(\s+)/.exec(lines[0])?.[0] ?? ''
-	const leadingSpaceRegex = new RegExp(`^${leadingSpace}`)
-	return lines.map((line) => line.replace(leadingSpaceRegex, '').trimEnd()).join('\n')
 }

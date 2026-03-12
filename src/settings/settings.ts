@@ -104,7 +104,7 @@ export class RenamiPluginSettingTab extends PluginSettingTab {
 						<a href="https://github.com/kitschpatrol/renami-obsidian">Renami documentation</a> and
 						the
 						<a href="https://github.com/syntax-tree/unist-util-select/blob/main/readme.md#support"
-							>Selector documentation</a
+							>selector documentation</a
 						>
 						for more information on template syntax.`,
 				),
@@ -231,7 +231,12 @@ export class RenamiPluginSettingTab extends PluginSettingTab {
 		new Setting(this.containerEl)
 			.setName('Transformation')
 			.setHeading()
-			.setDesc(sanitizeHTMLToDom(html`<em>These options apply to all templates.</em>`))
+			.setDesc(
+				sanitizeHTMLToDom(
+					html`Adjust casing, whitespace, and trimming of the generated filenames.
+						<em>These options apply to all templates.</em>`,
+				),
+			)
 
 		new Setting(this.containerEl).setName('Case').addDropdown((dropdown) => {
 			dropdown
@@ -263,9 +268,9 @@ export class RenamiPluginSettingTab extends PluginSettingTab {
 		})
 
 		new Setting(this.containerEl).setName('Collapse whitespace').addToggle((toggle) => {
-			toggle.setValue(this.plugin.settings.verboseNotices)
+			toggle.setValue(this.plugin.settings.options.collapseDuplicateWhitespace)
 			toggle.onChange(async (value) => {
-				this.plugin.settings.verboseNotices = value
+				this.plugin.settings.options.collapseDuplicateWhitespace = value
 				await this.plugin.saveSettings()
 			})
 		})
@@ -284,7 +289,12 @@ export class RenamiPluginSettingTab extends PluginSettingTab {
 		new Setting(this.containerEl)
 			.setName('Truncation')
 			.setHeading()
-			.setDesc(sanitizeHTMLToDom(html`TODO more detail. These options apply to all templates.`))
+			.setDesc(
+				sanitizeHTMLToDom(
+					html`Control how long filenames are shortened when they exceed the maximum length.
+						<em>These options apply to all templates.</em>`,
+				),
+			)
 
 		new Setting(this.containerEl).setName('Maximum length').addText((text) => {
 			text.setPlaceholder(String(getRenamiPluginDefaultSettings().options.maxLength))
@@ -323,7 +333,12 @@ export class RenamiPluginSettingTab extends PluginSettingTab {
 		new Setting(this.containerEl)
 			.setName('Delimiters')
 			.setHeading()
-			.setDesc(sanitizeHTMLToDom(html`TODO more detail. These options apply to all templates.`))
+			.setDesc(
+				sanitizeHTMLToDom(
+					html`Configure the characters used to join parts of the generated filename.
+						<em>These options apply to all templates.</em>`,
+				),
+			)
 
 		new Setting(this.containerEl).setName('Delimiter text').addText((text) => {
 			text.setPlaceholder(getRenamiPluginDefaultSettings().options.delimiter)
@@ -351,7 +366,7 @@ export class RenamiPluginSettingTab extends PluginSettingTab {
 
 		new Setting(this.containerEl)
 			.setName('Automatic rename')
-			.setDesc('Trigger renames when watched files change')
+			.setDesc('Automatically rename notes when watched files change.')
 			.addToggle((toggle) => {
 				toggle.setValue(this.plugin.settings.autoRenameEnabled)
 				toggle.onChange(async (value) => {
@@ -374,7 +389,6 @@ export class RenamiPluginSettingTab extends PluginSettingTab {
 					const maybeNumber = Number(text.getValue())
 
 					if (!Number.isNaN(maybeNumber)) {
-						console.log(maybeNumber)
 						this.plugin.settings.autoRenameDebounceIntervalMs = Math.clamp(maybeNumber, 100, 10_000)
 					}
 
@@ -402,7 +416,7 @@ export class RenamiPluginSettingTab extends PluginSettingTab {
 
 		new Setting(this.containerEl)
 			.setName('Verbose notices')
-			.setDesc('Extra details on the renaming process, useful for debugging.')
+			.setDesc('Show extra details during the renaming process, useful for debugging.')
 			.addToggle((toggle) => {
 				toggle.setValue(this.plugin.settings.verboseNotices)
 				toggle.onChange(async (value) => {
@@ -414,7 +428,7 @@ export class RenamiPluginSettingTab extends PluginSettingTab {
 		new Setting(this.containerEl)
 			.setName('Strict')
 			.setDesc(
-				'Strict idempotence, which will rename files with invalid templates to the default file name if not. When disabled, the original name is preserved when templates fail. */',
+				'Enforce strict idempotence. When enabled, files whose templates fail to produce a valid name will be renamed to the default file name. When disabled, the original name is preserved.',
 			)
 			.addToggle((toggle) => {
 				toggle.setValue(this.plugin.settings.options.strict)
@@ -426,7 +440,9 @@ export class RenamiPluginSettingTab extends PluginSettingTab {
 
 		new Setting(this.containerEl)
 			.setName('Default file name')
-			.setDesc('Fallback name for files with invalid templates when strict mode is enabled.')
+			.setDesc(
+				'Fallback name used when a template fails to produce a valid name and strict mode is enabled.',
+			)
 			.addText((text) => {
 				text.setPlaceholder(getRenamiPluginDefaultSettings().options.defaultName)
 				text.setValue(this.plugin.settings.options.defaultName)
@@ -445,7 +461,7 @@ export class RenamiPluginSettingTab extends PluginSettingTab {
 
 		new Setting(this.containerEl)
 			.setName('Configuration')
-			.setDesc('Stand-alone Renami JSON configuration.')
+			.setDesc('Copy the equivalent stand-alone Renami JSON configuration to the clipboard.')
 			.addButton((callback) => {
 				callback
 					.setTooltip('Copy configuration to clipboard')
@@ -474,7 +490,6 @@ export class RenamiPluginSettingTab extends PluginSettingTab {
 					this.plugin.renameNoteFileNames.flush()
 				})
 			})
-			.setDesc(sanitizeHTMLToDom(html`Last renamed: <em>${capitalize(syncTime)}</em>`))
 			.setClass('description-is-button-annotation')
 			.setDesc(sanitizeHTMLToDom(html`Last renamed: <em>${capitalize(syncTime)}</em>`))
 

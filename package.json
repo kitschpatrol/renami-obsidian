@@ -1,6 +1,7 @@
 {
 	"name": "renami-obsidian",
 	"version": "0.0.0",
+	"private": true,
 	"description": "An Obsidian plugin for content-aware automatic note name management.",
 	"keywords": [
 		"obsidian",
@@ -33,8 +34,8 @@
 		"manifest": "tsx ./scripts/generate-manifest.ts",
 		"release": "pnpm run manifest && bumpp package.json manifest.json --commit 'Release: %s' --tag '%s'",
 		"renami:local-deploy": "cp -r ./dist/* ~/Notes/Vault/.obsidian/plugins/renami",
-		"renami:use-local": "pnpm remove renami ; pnpm add -D ../renami",
-		"renami:use-npm": "pnpm remove renami ; pnpm add -D renami"
+		"renami:use-local": "pnpm remove @kitschpatrol/renami ; pnpm add -D ../renami",
+		"renami:use-npm": "pnpm remove @kitschpatrol/renami ; pnpm add -D @kitschpatrol/renami"
 	},
 	"devDependencies": {
 		"@kitschpatrol/renami": "^0.1.0",
