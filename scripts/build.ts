@@ -18,10 +18,15 @@ https://github.com/kitschpatrol/renami-obsidian
 */
 `
 
+const NODE_MODULE_PREFIX_REGEX = /^node:.+$/
+
 const ignoreNodeModulesPlugin: Plugin = {
 	name: 'ignore-node-modules',
 	setup(build) {
-		build.onResolve({ filter: /^node:.+$/ }, (args) => ({ external: true, path: args.path }))
+		build.onResolve({ filter: NODE_MODULE_PREFIX_REGEX }, (args) => ({
+			external: true,
+			path: args.path,
+		}))
 	},
 }
 

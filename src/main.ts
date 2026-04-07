@@ -1,4 +1,3 @@
-/* eslint-disable unicorn/consistent-function-scoping */
 /* eslint-disable ts/unbound-method */
 
 import escapeStringRegexp from 'escape-string-regexp'
@@ -35,6 +34,9 @@ import {
 	TFolder,
 	Vault,
 } from 'obsidian'
+
+const DRIVE_LETTER_REGEX = /^[A-Z]:/i
+const GLOB_REGEX = /\/\*\*\/\*\.\w+$/
 
 export default class RenamiPlugin extends Plugin {
 	public settings: RenamiPluginSettings = getRenamiPluginDefaultSettings()
@@ -356,7 +358,7 @@ export default class RenamiPlugin extends Plugin {
 			throw new Error('Renami glob adapter only supports returning files, not directories')
 		}
 
-		const pathWithoutGlob = patterns.replace(/\/\*\*\/\*\.\w+$/, '')
+		const pathWithoutGlob = patterns.replace(GLOB_REGEX, '')
 
 		// This is also implemented on the Renami library side, but doing it here
 		// for predictable file counts
@@ -525,7 +527,7 @@ export default class RenamiPlugin extends Plugin {
 			// - POSIX: "/path/to/vault"
 			const possiblyBarePath = normalizePath(adapter.getBasePath())
 
-			return /^[A-Z]:/i.test(possiblyBarePath)
+			return DRIVE_LETTER_REGEX.test(possiblyBarePath)
 				? possiblyBarePath
 				: path.join(path.sep, possiblyBarePath)
 		}
