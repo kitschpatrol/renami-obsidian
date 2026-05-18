@@ -133,7 +133,10 @@ let isRebuilding = false
  * Trigger a rebuild and copy the generated file to the demo vault.
  */
 async function triggerRebuild(): Promise<void> {
-	if (isRebuilding) return
+	if (isRebuilding) {
+		return
+	}
+
 	isRebuilding = true
 	console.log('Rebuilding...')
 	try {
@@ -179,7 +182,10 @@ if (production) {
 	// On any file change, debounce and trigger a rebuild.
 	watcher.on('all', (event, path) => {
 		console.log(`Detected ${event} on ${path}. Scheduling rebuild...`)
-		if (rebuildTimeout) clearTimeout(rebuildTimeout)
+		if (rebuildTimeout) {
+			clearTimeout(rebuildTimeout)
+		}
+
 		rebuildTimeout = setTimeout(triggerRebuild, 100)
 	})
 }

@@ -45,26 +45,37 @@ export function formatRenameReport(renameReport: RenamiReport, verbose: boolean)
 }
 
 export function objectsEqual<T extends Record<string, unknown> | undefined>(a: T, b: T): boolean {
-	if (a === b) return true
-	if (a === undefined || b === undefined) return false
+	if (a === b) {
+		return true
+	}
+
+	if (a === undefined || b === undefined) {
+		return false
+	}
 
 	const aKeys = Object.keys(a)
 	const bKeys = Object.keys(b)
 
-	if (aKeys.length !== bKeys.length) return false
+	if (aKeys.length !== bKeys.length) {
+		return false
+	}
 
 	for (const key of aKeys) {
-		if (a[key] !== b[key]) return false
+		if (a[key] !== b[key]) {
+			return false
+		}
 	}
 
 	return true
 }
 
 /**
- * Checks if two arrays of RenamiFolder objects are identical in both
- * content and order (sequence equality).
+ * Checks if two arrays of RenamiFolder objects are identical in both content
+ * and order (sequence equality).
+ *
  * @param a - The first array.
  * @param b - The second array.
+ *
  * @returns True if the arrays are identical sequences, false otherwise.
  */
 export function renamiFoldersEqual(a: RenamiFolder[], b: RenamiFolder[]): boolean {
@@ -104,7 +115,9 @@ export function sanitizeHtmlToDomWithFunction(
 }
 
 /**
- * Mainly for nice formatting with prettier. But the line wrapping means we have to strip surplus whitespace.
+ * Mainly for nice formatting with prettier. But the line wrapping means we have
+ * to strip surplus whitespace.
+ *
  * @public
  */
 export function html(strings: TemplateStringsArray, ...values: unknown[]): string {

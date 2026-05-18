@@ -132,7 +132,8 @@ export default class RenamiPlugin extends Plugin {
 	}
 
 	/**
-	 * Certain settings changes should trigger a name update from Renami, (but only fires if auto sync is enabled).
+	 * Certain settings changes should trigger a name update from Renami, (but
+	 * only fires if auto sync is enabled).
 	 */
 	public async settingsChangeCheck(previousSettings: RenamiPluginSettings) {
 		if (
@@ -210,6 +211,7 @@ export default class RenamiPlugin extends Plugin {
 					),
 				)
 			}
+
 			return
 		}
 
@@ -344,7 +346,10 @@ export default class RenamiPlugin extends Plugin {
 		options?: {
 			/** Whether to return absolute paths or not, default false */
 			absolute?: boolean
-			/** The current working directory to resolve the patterns against, default detected cwd */
+			/**
+			 * The current working directory to resolve the patterns against, default
+			 * detected cwd
+			 */
 			cwd?: string
 			/** Whether to match only files (not directories), default false */
 			onlyFiles?: boolean

@@ -14,7 +14,7 @@
   }
 }) -->
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/license/mit/)
 [![CI](https://github.com/kitschpatrol/renami-obsidian/actions/workflows/ci.yml/badge.svg)](https://github.com/kitschpatrol/renami-obsidian/actions/workflows/ci.yml)
 [![GitHub Release](https://img.shields.io/github/v/release/kitschpatrol/renami-obsidian?label=Release)](https://github.com/kitschpatrol/renami-obsidian/releases/latest)
 
@@ -403,7 +403,7 @@ I've linked to some below, and, where applicable, shown the Renami template stri
 
 ## Maintainers
 
-[@kitschpatrol](https://github.com/kitschpatrol)
+[kitschpatrol](https://github.com/kitschpatrol)
 
 ## License
 
