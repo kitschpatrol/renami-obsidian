@@ -1,11 +1,10 @@
 import type { RenamiConfig } from '@kitschpatrol/renami'
-import type { App, ButtonComponent } from 'obsidian'
+import type { App, SettingDefinitionItem, SettingDefinitionRender } from 'obsidian'
 import { defaultOptions } from '@kitschpatrol/renami'
-import { moment, PluginSettingTab, sanitizeHTMLToDom, Setting } from 'obsidian'
-import Sortable from 'sortablejs'
+import { moment, PluginSettingTab, sanitizeHTMLToDom } from 'obsidian'
 import type RenamiPlugin from '../main'
 import { FolderSuggest } from '../extensions/folder-suggest'
-import { capitalize, html } from '../utilities'
+import { capitalize, html, renamiFoldersEqual } from '../utilities'
 
 export type RenamiFolder = {
 	folderPath: string
@@ -13,7 +12,7 @@ export type RenamiFolder = {
 }
 
 export type RenamiPluginSettings = {
-	autoRenameDebounceIntervalMs: number // Not exposed in settings
+	autoRenameDebounceIntervalMs: number
 	autoRenameEnabled: boolean
 	folders: RenamiFolder[] // List of folders to apply renaming rules to
 	options: Required<NonNullable<RenamiConfig['options']>>
@@ -26,6 +25,9 @@ export type RenamiPluginSettings = {
 	}
 	verboseNotices: boolean
 }
+
+export const AUTO_RENAME_DEBOUNCE_MIN_MS = 100
+export const AUTO_RENAME_DEBOUNCE_MAX_MS = 10_000
 
 // TODO bind instead?
 export function getRenamiPluginDefaultSettings(): RenamiPluginSettings {
@@ -45,40 +47,76 @@ export function getRenamiPluginDefaultSettings(): RenamiPluginSettings {
 	}
 }
 
+const optionsKeyPrefix = 'options.'
+
+type RenamiSettingKey =
+	| 'autoRenameDebounceIntervalMs'
+	| 'autoRenameEnabled'
+	| 'verboseNotices'
+	| `options.${Extract<keyof RenamiPluginSettings['options'], string>}`
+
+/**
+ * An info-only row used in place of the pre-1.13 heading description pattern.
+ * Uses a render callback because definitions with an empty name and no control,
+ * render, or action are skipped entirely.
+ */
+function sectionDescription(descriptionHtml: string): SettingDefinitionRender {
+	return {
+		name: '',
+		render(setting) {
+			setting.setDesc(sanitizeHTMLToDom(descriptionHtml))
+		},
+		searchable: false,
+	}
+}
+
 export class RenamiPluginSettingTab extends PluginSettingTab {
+	private hasActiveSession = false
 	private initialSettings: RenamiPluginSettings = getRenamiPluginDefaultSettings()
 	override plugin: RenamiPlugin
+	private refreshNotesFound: (() => void) | undefined
 
 	constructor(app: App, plugin: RenamiPlugin) {
 		super(app, plugin)
 		this.plugin = plugin
 	}
 
-	override display(): void {
-		this.initialSettings = structuredClone(this.plugin.settings)
-		this.containerEl.addClass('renami-settings')
-		this.containerEl.setAttr('id', 'renami-settings')
-		this.render()
+	/**
+	 * Drops focus before a list mutation. Otherwise the re-render's focus
+	 * restoration lands in a folder search input, which pops its suggestion
+	 * popover.
+	 */
+	private blurActiveElement(): void {
+		const active = this.containerEl.doc.activeElement
+
+		if (active?.instanceOf(HTMLElement)) {
+			active.blur()
+		}
 	}
 
-	override hide(): void {
-		// Normalize folders
-		this.plugin.settings.folders = this.plugin.getSanitizedFolders()
+	override getControlValue(key: string): unknown {
+		if (key.startsWith(optionsKeyPrefix)) {
+			const optionsRecord: Record<string, unknown> = this.plugin.settings.options
+			return optionsRecord[key.slice(optionsKeyPrefix.length)]
+		}
 
-		// Do any pre-commit settings validation here
-		void this.plugin.settingsChangeCheck(this.initialSettings)
+		return super.getControlValue(key)
 	}
 
-	public render(): void {
-		// Save scroll position, so the settings don't jump around on re-renders
-		const scrollPosition = this.containerEl.scrollTop
-
-		this.containerEl.empty()
-
+	override getSettingDefinitions(): Array<SettingDefinitionItem<RenamiSettingKey>> {
 		// Cancel any pending renames
 		this.plugin.renameNoteFileNames.clear()
 
-		// Ensure we have at least one folder
+		this.containerEl.addClass('renami-settings')
+
+		// Capture a baseline at the start of each settings session so changes can
+		// be detected when the tab is hidden
+		if (!this.hasActiveSession) {
+			this.hasActiveSession = true
+			this.initialSettings = structuredClone(this.plugin.settings)
+		}
+
+		// Ensure there's always at least one folder row to fill in
 		if (this.plugin.settings.folders.length === 0) {
 			this.plugin.settings.folders.push({
 				folderPath: '',
@@ -86,418 +124,378 @@ export class RenamiPluginSettingTab extends PluginSettingTab {
 			})
 		}
 
-		// Fake input to catch the automatic first-input focus that was popping the search input.
-		// Focus is still just a tab away.
-		const focusCatcher = this.containerEl.createEl('input', { type: 'text' })
-		focusCatcher.setAttribute('style', 'display: none;')
+		const defaultSettings = getRenamiPluginDefaultSettings()
 
-		// ----------------------------------------------------
+		return [
+			{
+				cls: 'renami-templates-intro',
+				heading: 'Templates',
+				items: [
+					sectionDescription(
+						html`Renami will rename notes in the listed folders according to the associated template
+							strings. Renaming is always recursive, and templates at the bottom of the stack will
+							take precedence over earlier ones matching the same files. See the
+							<a href="https://github.com/kitschpatrol/renami-obsidian">Renami documentation</a> and
+							the
+							<a href="https://github.com/syntax-tree/unist-util-select/blob/main/readme.md#support"
+								>selector documentation</a
+							>
+							for more information on template syntax.`,
+					),
+				],
+				type: 'group',
+			},
+			{
+				cls: 'renami-templates-list',
+				items: this.plugin.settings.folders.map((folder) => ({
+					name: '',
+					render: (setting) => {
+						setting.setNoInfo()
+						setting.infoEl.remove()
+						setting.setClass('renami-folder-setting')
 
-		new Setting(this.containerEl)
-			.setName('Templates')
-			.setHeading()
-			.setDesc(
-				sanitizeHTMLToDom(
-					html`Renami will rename notes in the listed folders according to the associated template
-						strings. Renaming is always recursive, and templates at the bottom of the stack will
-						take precedence over earlier ones matching the same files. See the
-						<a href="https://github.com/kitschpatrol/renami-obsidian">Renami documentation</a> and
-						the
-						<a href="https://github.com/syntax-tree/unist-util-select/blob/main/readme.md#support"
-							>selector documentation</a
-						>
-						for more information on template syntax.`,
-				),
-			)
+						setting.addSearch((search) => {
+							new FolderSuggest(search.inputEl, this.app)
+							search
+								.setPlaceholder('Select a folder')
+								.setValue(folder.folderPath)
+								.onChange((value) => {
+									folder.folderPath = value
+								})
 
-		const folderListElement = this.containerEl.createEl('div', { cls: 'sortable-container' })
+							search.inputEl.addEventListener('blur', () => {
+								void this.plugin.saveSettings().then(() => {
+									this.refreshNotesFound?.()
+								})
+							})
+						})
 
-		if (this.plugin.settings.folders.length > 1) {
-			Sortable.create(folderListElement, {
-				animation: 100,
-				direction: 'vertical',
-				draggable: '.setting-item',
-				forceFallback: true, // Force old-school implementation to fix spill animation
-				handle: '.drag-handle',
-				onEnd: (event) => {
-					const { newIndex, oldIndex } = event
+						setting.addText((text) => {
+							text
+								.setPlaceholder('Enter template string')
+								.setValue(folder.template)
+								.onChange((value) => {
+									folder.template = value
+								})
 
-					if (oldIndex !== undefined && newIndex !== undefined && oldIndex !== newIndex) {
-						const [movedFolder] = this.plugin.settings.folders.splice(oldIndex, 1)
+							text.inputEl.addEventListener('blur', () => {
+								void this.plugin.saveSettings().then(() => {
+									this.refreshNotesFound?.()
+								})
+							})
+						})
+					},
+					searchable: false,
+				})),
+				onDelete: (index) => {
+					// The last row's delete button is display-only
+					if (this.plugin.settings.folders.length <= 1) {
+						return
+					}
 
-						if (movedFolder !== undefined) {
-							this.plugin.settings.folders.splice(newIndex, 0, movedFolder)
-							void this.plugin.saveSettings()
-						}
+					this.blurActiveElement()
+					this.plugin.settings.folders.splice(index, 1)
+					void this.plugin.saveSettings().then(() => {
+						this.update()
+					})
+				},
+				onReorder: (oldIndex, newIndex) => {
+					const [movedFolder] = this.plugin.settings.folders.splice(oldIndex, 1)
+
+					if (movedFolder !== undefined) {
+						this.blurActiveElement()
+						this.plugin.settings.folders.splice(newIndex, 0, movedFolder)
+						void this.plugin.saveSettings().then(() => {
+							this.update()
+						})
 					}
 				},
-			})
-		}
-
-		for (const [index, folder] of this.plugin.settings.folders.entries()) {
-			const searchSetting = new Setting(folderListElement)
-
-			searchSetting.setNoInfo()
-
-			searchSetting.addExtraButton((callback) => {
-				callback
-					.setIcon('grip-horizontal')
-					.setTooltip('Drag to reorder')
-					.setDisabled(this.plugin.settings.folders.length <= 1)
-					.extraSettingsEl.addClass('drag-handle')
-			})
-
-			searchSetting.infoEl.remove()
-
-			searchSetting
-				.addSearch((callback) => {
-					new FolderSuggest(callback.inputEl, this.app)
-					callback
-						.setPlaceholder('Select a folder')
-						.setValue(folder.folderPath)
-						.onChange((value) => {
-							folder.folderPath = value
-						})
-
-					callback.inputEl.addEventListener('blur', () => {
-						void this.plugin.saveSettings().then(() => {
-							// Kludge for label re-rendering without a focus-stealing full
-							// re-render
-							updateAddFolderButton()
-						})
-					})
-				})
-				.setClass('folder-setting')
-
-			searchSetting.addText((callback) => {
-				// Text area for template
-				callback
-					.setPlaceholder('Enter template string')
-					.setValue(folder.template)
-					.onChange((value) => {
-						folder.template = value
-					})
-
-				callback.inputEl.addEventListener('blur', () => {
-					void this.plugin.saveSettings().then(() => {
-						// Kludge for label re-rendering without a focus-stealing full
-						// re-render
-						updateAddFolderButton()
-					})
-				})
-			})
-
-			searchSetting.addExtraButton((callback) => {
-				callback
-					.setIcon('cross')
-					.setDisabled(this.plugin.settings.folders.length <= 1)
-					.setTooltip('Delete row')
-					.onClick(async () => {
-						this.plugin.settings.folders.splice(index, 1)
-						await this.plugin.saveSettings()
-						this.render()
-					})
-					.extraSettingsEl.addClass('delete-button')
-			})
-		}
-
-		const newFolderButtonSetting = new Setting(this.containerEl)
-			.addButton((button: ButtonComponent) => {
-				button
-					.setTooltip('Add folder')
-					.setButtonText('Add folder')
-					// .setIcon('plus')
-					.onClick(async () => {
-						this.plugin.settings.folders.push({
-							folderPath: '',
-							template: '',
-						})
-						await this.plugin.saveSettings()
-						this.render()
-					})
-			})
-			.setClass('description-is-button-annotation')
-
-		const updateAddFolderButton = () => {
-			newFolderButtonSetting.setDesc(
-				sanitizeHTMLToDom(
-					html`Notes found: <em>${String(this.plugin.getWatchedFiles().length)}</em>`,
-				),
-			)
-		}
-
-		updateAddFolderButton()
-
-		// Transformations ---------------------------------
-
-		new Setting(this.containerEl)
-			.setName('Transformation')
-			.setHeading()
-			.setDesc(
-				sanitizeHTMLToDom(
-					html`Adjust casing, whitespace, and trimming of the generated filenames.
-						<em>These options apply to all templates.</em>`,
-				),
-			)
-
-		new Setting(this.containerEl).setName('Case').addDropdown((dropdown) => {
-			dropdown
-				/* eslint-disable perfectionist/sort-objects */
-				.addOptions({
-					// TODO export these from library?
-					preserve: 'Preserve',
-					camel: 'camelCase',
-					kebab: 'kebab-case',
-					lowercase: 'lowercase',
-					pascal: 'PascalCase',
-					'screaming-kebab': 'SCREAMING-KEBAB',
-					'screaming-snake': 'SCREAMING_SNAKE',
-					sentence: 'Sentence case',
-					slug: 'slug',
-					snake: 'snake_case',
-					title: 'Title Case',
-					uppercase: 'UPPERCASE',
-				})
-				/* eslint-enable perfectionist/sort-objects */
-				.setValue(this.plugin.settings.options.caseType)
-				.onChange(async (value) => {
-					this.plugin.settings.options.caseType =
-						value as typeof this.plugin.settings.options.caseType
-
-					await this.plugin.saveSettings()
-				})
-		})
-
-		new Setting(this.containerEl).setName('Collapse whitespace').addToggle((toggle) => {
-			toggle.setValue(this.plugin.settings.options.collapseDuplicateWhitespace)
-			toggle.onChange(async (value) => {
-				this.plugin.settings.options.collapseDuplicateWhitespace = value
-				await this.plugin.saveSettings()
-			})
-		})
-
-		// Everyone should trim...
-		new Setting(this.containerEl).setName('Trim').addToggle((toggle) => {
-			toggle.setValue(this.plugin.settings.options.trim)
-			toggle.onChange(async (value) => {
-				this.plugin.settings.options.trim = value
-				await this.plugin.saveSettings()
-			})
-		})
-
-		// ----------------------------------------------------
-
-		new Setting(this.containerEl)
-			.setName('Truncation')
-			.setHeading()
-			.setDesc(
-				sanitizeHTMLToDom(
-					html`Control how long filenames are shortened when they exceed the maximum length.
-						<em>These options apply to all templates.</em>`,
-				),
-			)
-
-		new Setting(this.containerEl).setName('Maximum length').addText((text) => {
-			text.setPlaceholder(String(getRenamiPluginDefaultSettings().options.maxLength))
-			text.setValue(String(this.plugin.settings.options.maxLength))
-			text.onChange((value) => {
-				this.plugin.settings.options.maxLength = Number(value)
-			})
-
-			text.inputEl.addEventListener('blur', () => {
-				void this.plugin.saveSettings()
-			})
-		})
-
-		new Setting(this.containerEl).setName('Elision text').addText((text) => {
-			text.setPlaceholder(getRenamiPluginDefaultSettings().options.truncationString)
-			text.setValue(this.plugin.settings.options.truncationString)
-			text.onChange((value) => {
-				this.plugin.settings.options.truncationString = value
-			})
-
-			text.inputEl.addEventListener('blur', () => {
-				void this.plugin.saveSettings()
-			})
-		})
-
-		new Setting(this.containerEl).setName('Find word boundary').addToggle((toggle) => {
-			toggle.setValue(this.plugin.settings.options.truncateOnWordBoundary)
-			toggle.onChange(async (value) => {
-				this.plugin.settings.options.truncateOnWordBoundary = value
-				await this.plugin.saveSettings()
-			})
-		})
-
-		// ----------------------------------------------------
-
-		new Setting(this.containerEl)
-			.setName('Delimiters')
-			.setHeading()
-			.setDesc(
-				sanitizeHTMLToDom(
-					html`Configure the characters used to join parts of the generated filename.
-						<em>These options apply to all templates.</em>`,
-				),
-			)
-
-		new Setting(this.containerEl).setName('Delimiter text').addText((text) => {
-			text.setPlaceholder(getRenamiPluginDefaultSettings().options.delimiter)
-			text.setValue(this.plugin.settings.options.delimiter)
-			text.onChange((value) => {
-				this.plugin.settings.options.delimiter = value
-			})
-
-			text.inputEl.addEventListener('blur', () => {
-				void this.plugin.saveSettings()
-			})
-		})
-
-		new Setting(this.containerEl).setName('Collapse duplicates').addToggle((toggle) => {
-			toggle.setValue(this.plugin.settings.options.collapseSurplusDelimiters)
-			toggle.onChange(async (value) => {
-				this.plugin.settings.options.collapseSurplusDelimiters = value
-				await this.plugin.saveSettings()
-			})
-		})
-
-		// ----------------------------------------------------
-
-		new Setting(this.containerEl).setName('Advanced').setHeading()
-
-		new Setting(this.containerEl)
-			.setName('Automatic rename')
-			.setDesc('Automatically rename notes when watched files change.')
-			.addToggle((toggle) => {
-				toggle.setValue(this.plugin.settings.autoRenameEnabled)
-				toggle.onChange(async (value) => {
-					this.plugin.settings.autoRenameEnabled = value
-					await this.plugin.saveSettings()
-				})
-			})
-
-		// Doesn't update live because it's set when plugin is constructed...
-		new Setting(this.containerEl)
-			.setName('Automatic rename delay')
-			.setDesc(
-				'Minimum time between Renami invocations, in milliseconds. Restart Obsidian to apply changes.',
-			)
-			.addText((text) => {
-				text.setPlaceholder(String(getRenamiPluginDefaultSettings().autoRenameDebounceIntervalMs))
-				text.setValue(String(this.plugin.settings.autoRenameDebounceIntervalMs))
-
-				text.inputEl.addEventListener('blur', () => {
-					const maybeNumber = Number(text.getValue())
-
-					if (!Number.isNaN(maybeNumber)) {
-						this.plugin.settings.autoRenameDebounceIntervalMs = Math.min(
-							Math.max(maybeNumber, 100),
-							10_000,
+				type: 'list',
+			},
+			{
+				name: '',
+				render: (setting) => {
+					const update = () => {
+						setting.setDesc(
+							sanitizeHTMLToDom(
+								html`Notes found: <em>${String(this.plugin.getWatchedFiles().length)}</em>`,
+							),
 						)
 					}
 
-					text.setValue(String(this.plugin.settings.autoRenameDebounceIntervalMs))
-					void this.plugin.saveSettings()
-				})
-			})
+					update()
+					this.refreshNotesFound = update
 
-		new Setting(this.containerEl)
-			.setName('Ignore folder notes')
-			.setDesc(
-				sanitizeHTMLToDom(
-					html`Exclude notes with the same name as their parent folder from renaming. Useful in
-						combination with the
-						<a href="https://lostpaul.github.io/obsidian-folder-notes/">Folder notes</a> plugin.`,
-				),
-			)
-			.addToggle((toggle) => {
-				toggle.setValue(this.plugin.settings.options.ignoreFolderNotes)
-				toggle.onChange(async (value) => {
-					this.plugin.settings.options.ignoreFolderNotes = value
-					await this.plugin.saveSettings()
-				})
-			})
-
-		new Setting(this.containerEl)
-			.setName('Verbose notices')
-			.setDesc('Show extra details during the renaming process, useful for debugging.')
-			.addToggle((toggle) => {
-				toggle.setValue(this.plugin.settings.verboseNotices)
-				toggle.onChange(async (value) => {
-					this.plugin.settings.verboseNotices = value
-					await this.plugin.saveSettings()
-				})
-			})
-
-		new Setting(this.containerEl)
-			.setName('Strict')
-			.setDesc(
-				'Enforce strict idempotence. When enabled, files whose templates fail to produce a valid name will be renamed to the default file name. When disabled, the original name is preserved.',
-			)
-			.addToggle((toggle) => {
-				toggle.setValue(this.plugin.settings.options.strict)
-				toggle.onChange(async (value) => {
-					this.plugin.settings.options.strict = value
-					await this.plugin.saveSettings()
-				})
-			})
-
-		new Setting(this.containerEl)
-			.setName('Default file name')
-			.setDesc(
-				'Fallback name used when a template fails to produce a valid name and strict mode is enabled.',
-			)
-			.addText((text) => {
-				text.setPlaceholder(getRenamiPluginDefaultSettings().options.defaultName)
-				text.setValue(this.plugin.settings.options.defaultName)
-
-				text.inputEl.addEventListener('blur', () => {
-					const maybeText = text.getValue()
-
-					if (maybeText !== '') {
-						this.plugin.settings.options.defaultName = maybeText
-					}
-
-					text.setValue(this.plugin.settings.options.defaultName)
-					void this.plugin.saveSettings()
-				})
-			})
-
-		new Setting(this.containerEl)
-			.setName('Configuration')
-			.setDesc('Copy the equivalent stand-alone Renami JSON configuration to the clipboard.')
-			.addButton((callback) => {
-				callback
-					.setTooltip('Copy configuration to clipboard')
-
-					.setButtonText('Copy')
-					.onClick(async () => {
-						// eslint-disable-next-line node/no-unsupported-features/node-builtins
-						await navigator.clipboard.writeText(
-							JSON.stringify(this.plugin.getRenamiConfig(this.plugin.settings), undefined, 2),
-						)
+					setting.setClass('description-is-button-annotation').addButton((button) => {
+						button.setButtonText('Add folder').onClick(async () => {
+							this.plugin.settings.folders.push({
+								folderPath: '',
+								template: '',
+							})
+							await this.plugin.saveSettings()
+							this.update()
+						})
 					})
-			})
 
-		// Action button ---------------------------------
+					return () => {
+						this.refreshNotesFound = undefined
+					}
+				},
+				searchable: false,
+			},
+			{
+				heading: 'Transformation',
+				items: [
+					sectionDescription(
+						html`Adjust casing, whitespace, and trimming of the generated filenames.
+							<em>These options apply to all templates.</em>`,
+					),
+					{
+						control: {
+							key: 'options.caseType',
+							/* eslint-disable perfectionist/sort-objects */
+							options: {
+								// TODO export these from library?
+								preserve: 'Preserve',
+								camel: 'camelCase',
+								kebab: 'kebab-case',
+								lowercase: 'lowercase',
+								pascal: 'PascalCase',
+								'screaming-kebab': 'SCREAMING-KEBAB',
+								'screaming-snake': 'SCREAMING_SNAKE',
+								sentence: 'Sentence case',
+								slug: 'slug',
+								snake: 'snake_case',
+								title: 'Title Case',
+								uppercase: 'UPPERCASE',
+							},
+							/* eslint-enable perfectionist/sort-objects */
+							type: 'dropdown',
+						},
+						name: 'Case',
+					},
+					{
+						control: {
+							key: 'options.collapseDuplicateWhitespace',
+							type: 'toggle',
+						},
+						name: 'Collapse whitespace',
+					},
+					// Everyone should trim...
+					{
+						control: {
+							key: 'options.trim',
+							type: 'toggle',
+						},
+						name: 'Trim',
+					},
+				],
+				type: 'group',
+			},
+			{
+				heading: 'Truncation',
+				items: [
+					sectionDescription(
+						html`Control how long filenames are shortened when they exceed the maximum length.
+							<em>These options apply to all templates.</em>`,
+					),
+					{
+						control: {
+							defaultValue: defaultSettings.options.maxLength,
+							key: 'options.maxLength',
+							min: 1,
+							placeholder: String(defaultSettings.options.maxLength),
+							step: 1,
+							type: 'number',
+							validate: (value) =>
+								Number.isInteger(value) && value >= 1
+									? undefined
+									: 'Enter a whole number of 1 or greater.',
+						},
+						name: 'Maximum length',
+					},
+					{
+						control: {
+							key: 'options.truncationString',
+							placeholder: defaultSettings.options.truncationString,
+							type: 'text',
+						},
+						name: 'Elision text',
+					},
+					{
+						control: {
+							key: 'options.truncateOnWordBoundary',
+							type: 'toggle',
+						},
+						name: 'Find word boundary',
+					},
+				],
+				type: 'group',
+			},
+			{
+				heading: 'Delimiters',
+				items: [
+					sectionDescription(
+						html`Configure the characters used to join parts of the generated filename.
+							<em>These options apply to all templates.</em>`,
+					),
+					{
+						control: {
+							key: 'options.delimiter',
+							placeholder: defaultSettings.options.delimiter,
+							type: 'text',
+						},
+						name: 'Delimiter text',
+					},
+					{
+						control: {
+							key: 'options.collapseSurplusDelimiters',
+							type: 'toggle',
+						},
+						name: 'Collapse duplicates',
+					},
+				],
+				type: 'group',
+			},
+			{
+				heading: 'Advanced',
+				items: [
+					{
+						control: {
+							key: 'autoRenameEnabled',
+							type: 'toggle',
+						},
+						desc: 'Automatically rename notes when watched files change.',
+						name: 'Automatic rename',
+					},
+					// Doesn't update live because it's set when plugin is constructed...
+					{
+						control: {
+							key: 'autoRenameDebounceIntervalMs',
+							max: AUTO_RENAME_DEBOUNCE_MAX_MS,
+							min: AUTO_RENAME_DEBOUNCE_MIN_MS,
+							placeholder: String(defaultSettings.autoRenameDebounceIntervalMs),
+							type: 'number',
+							validate: (value) =>
+								value >= AUTO_RENAME_DEBOUNCE_MIN_MS && value <= AUTO_RENAME_DEBOUNCE_MAX_MS
+									? undefined
+									: `Enter a value between ${AUTO_RENAME_DEBOUNCE_MIN_MS} and ${AUTO_RENAME_DEBOUNCE_MAX_MS} milliseconds.`,
+						},
+						desc: 'Minimum time between Renami invocations, in milliseconds. Restart Obsidian to apply changes.',
+						name: 'Automatic rename delay',
+					},
+					{
+						control: {
+							key: 'options.ignoreFolderNotes',
+							type: 'toggle',
+						},
+						desc: sanitizeHTMLToDom(
+							html`Exclude notes with the same name as their parent folder from renaming. Useful in
+								combination with the
+								<a href="https://lostpaul.github.io/obsidian-folder-notes/">Folder notes</a>
+								plugin.`,
+						),
+						name: 'Ignore folder notes',
+					},
+					{
+						control: {
+							key: 'verboseNotices',
+							type: 'toggle',
+						},
+						desc: 'Show extra details during the renaming process, useful for debugging.',
+						name: 'Verbose notices',
+					},
+					{
+						control: {
+							key: 'options.strict',
+							type: 'toggle',
+						},
+						desc: 'Enforce strict idempotence. When enabled, files whose templates fail to produce a valid name will be renamed to the default file name. When disabled, the original name is preserved.',
+						name: 'Strict',
+					},
+					{
+						control: {
+							key: 'options.defaultName',
+							placeholder: defaultSettings.options.defaultName,
+							type: 'text',
+							validate: (value) =>
+								value.trim().length > 0 ? undefined : 'Enter a non-empty file name.',
+						},
+						desc: 'Fallback name used when a template fails to produce a valid name and strict mode is enabled.',
+						name: 'Default file name',
+					},
+					{
+						desc: 'Copy the equivalent stand-alone Renami JSON configuration to the clipboard.',
+						name: 'Configuration',
+						render: (setting) => {
+							setting.addButton((button) => {
+								button
+									.setTooltip('Copy configuration to clipboard')
+									.setButtonText('Copy')
+									.onClick(async () => {
+										// eslint-disable-next-line node/no-unsupported-features/node-builtins
+										await navigator.clipboard.writeText(
+											JSON.stringify(
+												this.plugin.getRenamiConfig(this.plugin.settings),
+												undefined,
+												2,
+											),
+										)
+									})
+							})
+						},
+					},
+					{
+						name: '',
+						render: (setting) => {
+							const { latestRenameTime } = this.plugin.settings.stats
+							const syncTime =
+								latestRenameTime === undefined ? 'Never' : moment.unix(latestRenameTime).fromNow()
 
-		const { latestRenameTime } = this.plugin.settings.stats
-		const syncTime =
-			latestRenameTime === undefined ? 'Never' : moment.unix(latestRenameTime).fromNow()
+							setting
+								.setClass('description-is-button-annotation')
+								.setDesc(sanitizeHTMLToDom(html`Last renamed: <em>${capitalize(syncTime)}</em>`))
+								.addButton((button) => {
+									button.setButtonText('Rename now')
+									button.setCta()
+									button.onClick(async () => {
+										await this.plugin.renameNoteFileNames(true)
+										this.plugin.renameNoteFileNames.flush()
+									})
+								})
+						},
+						searchable: false,
+					},
+				],
+				type: 'group',
+			},
+		]
+	}
 
-		new Setting(this.containerEl)
-			.addButton((button) => {
-				button.setButtonText('Rename now')
-				button.setCta()
-				button.onClick(async () => {
-					await this.plugin.renameNoteFileNames(true)
-					this.plugin.renameNoteFileNames.flush()
-				})
-			})
-			.setClass('description-is-button-annotation')
-			.setDesc(sanitizeHTMLToDom(html`Last renamed: <em>${capitalize(syncTime)}</em>`))
+	override hide(): void {
+		// Normalize folders
+		const sanitizedFolders = this.plugin.getSanitizedFolders()
 
-		// Restore scroll position
-		this.containerEl.scrollTop = scrollPosition
+		if (!renamiFoldersEqual(this.plugin.settings.folders, sanitizedFolders)) {
+			this.plugin.settings.folders = sanitizedFolders
+			void this.plugin.saveSettings()
+		}
+
+		// Do any pre-commit settings validation here
+		void this.plugin.settingsChangeCheck(this.initialSettings)
+
+		this.hasActiveSession = false
+		super.hide()
+	}
+
+	override async setControlValue(key: string, value: unknown): Promise<void> {
+		if (key.startsWith(optionsKeyPrefix)) {
+			const optionsRecord: Record<string, unknown> = this.plugin.settings.options
+			optionsRecord[key.slice(optionsKeyPrefix.length)] = value
+			await this.plugin.saveSettings()
+			return
+		}
+
+		await super.setControlValue(key, value)
 	}
 }

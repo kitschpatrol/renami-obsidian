@@ -1,92 +1,136 @@
-body:has(.sortable-chosen) * {
-	cursor: grabbing !important;
-	user-select: none;
-}
+/*
+Folder row: drag handle | inputs | delete button.
 
-div.renami-settings {
+Not scoped under .renami-settings because during drag-reordering Obsidian
+clones the row into a .drag-reorder-ghost element appended to the document
+body, and the clone must keep this layout.
+
+Fixed row tracks keep the vacated placeholder row at full height while its
+contents are hidden during a drag.
+*/
+div.renami-folder-setting div.setting-item-control {
+	display: grid;
+	grid-template: var(--input-height) var(--input-height) / min-content minmax(0, 1fr) min-content;
+	gap: var(--size-4-2);
+
 	div.search-input-container {
+		grid-column: 2;
+		grid-row: 1;
 		width: 100%;
 	}
 
+	> input[type='text'] {
+		grid-column: 2;
+		grid-row: 2;
+	}
+
+	/* Hit zone spans the full height of the row */
+	div.extra-setting-button {
+		display: grid;
+		grid-column: 3;
+		grid-row: 1 / span 2;
+		place-items: center;
+		align-self: stretch;
+	}
+
+	div.extra-setting-button.mod-drag-handle {
+		cursor: grab;
+		grid-column: 1;
+
+		&:active {
+			cursor: grabbing;
+		}
+	}
+}
+
+/*
+Match the in-list row geometry on the floating drag clone. Outside the list
+group, the clone loses the group's mod-no-icon and row rules, so the empty
+icon element and the item border would otherwise shift the contents right.
+*/
+div.drag-reorder-ghost div.renami-folder-setting {
+	/* The desktop mod-list padding; the body-scoped variable value is wider */
+	padding: var(--size-4-4);
+	border: none;
+
+	div.setting-item-icon {
+		display: none;
+	}
+}
+
+div.renami-settings {
 	/* Keep the line length reasonable */
 	div.setting-item-description {
 		max-width: 70ch;
 	}
 
-	/* Default stylesheet doesn't disable the disabled? */
-	div.clickable-icon.is-disabled {
+	/*
+	Merge the templates intro, folder list, and add-folder groups into a
+	single visual box: remove the gaps between the groups and the borders and
+	radii at the seams
+	*/
+	div.renami-templates-intro div.setting-items {
+		border-bottom: none;
+		border-bottom-right-radius: 0;
+		border-bottom-left-radius: 0;
+	}
+
+	div.renami-templates-list,
+	div.renami-templates-list + div.setting-group {
+		margin-top: 0;
+	}
+
+	div.renami-templates-list div.setting-items {
+		border-top: none;
+		border-bottom: none;
+		border-radius: 0;
+	}
+
+	div.renami-templates-list + div.setting-group div.setting-items {
+		border-top: none;
+		border-top-left-radius: 0;
+		border-top-right-radius: 0;
+	}
+
+	/* Restore the row dividers Obsidian hides on first children, to mark the seams */
+	div.renami-templates-list div.setting-items > div.setting-item:first-child::before,
+	div.renami-templates-list
+		+ div.setting-group
+		div.setting-items
+		> div.setting-item:first-child::before {
+		content: '';
+	}
+
+	/* Breathing room between folder rows */
+	div.renami-templates-list {
+		--setting-items-padding-y: var(--size-4-4);
+	}
+
+	/* With a single row, drag and delete do nothing: show them disabled */
+	div.renami-templates-list
+		div.setting-items
+		> div.setting-item:only-child
+		div.extra-setting-button {
 		pointer-events: none;
 		opacity: 0.25;
 	}
 
-	/* Hide border */
-	div.sortable-drag {
-		border: none;
-	}
-
-	div.drag-handle:not(.is-disabled) {
-		cursor: grab;
-	}
-
-	/* Hide children only so border still draws */
-	div.sortable-ghost > div {
-		visibility: hidden; /* Hide the ghost element when dragging */
-	}
-
-	/* Folder grid */
-	div.sortable-container {
-		> :first-child {
-			/* Default stylesheet values */
-			padding-top: 0.75em;
-			border-top: 1px solid var(--background-modifier-border);
-		}
-
-		div.folder-setting {
-			div.setting-item-control {
-				display: grid;
-				grid-auto-flow: column;
-				grid-template: 1fr 1fr / min-content 1fr min-content;
-
-				div.drag-handle,
-				div.delete-button {
-					grid-row: 1 / span 2;
-					align-self: stretch;
-				}
-			}
-		}
-	}
-
-	/* Lay out sync stats */
-	div.stats {
-		div.setting-item-info {
-			width: 100%;
-
-			div.setting-item-description {
-				display: grid;
-				grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-
-				p {
-					margin: 0;
-					font-weight: bold;
-				}
-			}
-		}
-	}
-
-	/* No line above reset buttons */
-	div.stats-reset {
-		border-top: none;
-	}
-
-	/* Keep button annotations to the right */
+	/* Keep button annotations to the right, with the annotation's text baseline
+	   matching the button label's */
 	div.setting-item.description-is-button-annotation {
+		align-items: baseline;
+
 		div.setting-item-info {
 			display: flex;
 			flex-wrap: wrap;
 			justify-content: flex-end;
+
+			/* The empty name would otherwise supply the container's baseline */
+			div.setting-item-name:empty {
+				display: none;
+			}
 		}
 
-		/* stylelint-disable-next-line no-descending-specificity */
 		div.setting-item-control {
 			flex: none;
 		}

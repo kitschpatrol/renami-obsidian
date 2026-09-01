@@ -2,7 +2,12 @@
 
 import escapeStringRegexp from 'escape-string-regexp'
 import type { RenamiFolder, RenamiPluginSettings } from './settings/settings'
-import { getRenamiPluginDefaultSettings, RenamiPluginSettingTab } from './settings/settings'
+import {
+	AUTO_RENAME_DEBOUNCE_MAX_MS,
+	AUTO_RENAME_DEBOUNCE_MIN_MS,
+	getRenamiPluginDefaultSettings,
+	RenamiPluginSettingTab,
+} from './settings/settings'
 import {
 	formatRenameReport,
 	html,
@@ -122,6 +127,28 @@ export default class RenamiPlugin extends Plugin {
 		// Merge any saved settings into defaults
 		// TODO detect change and return boolean to skip subsequent writes?
 		this.settings = { ...this.settings, ...(await this.loadData()) }
+
+		// The settings tab's validate callbacks only gate the UI, so repair any
+		// invalid stored values from earlier plugin versions here
+		const defaultSettings = getRenamiPluginDefaultSettings()
+		const { options } = this.settings
+
+		if (!Number.isInteger(options.maxLength) || options.maxLength < 1) {
+			options.maxLength = defaultSettings.options.maxLength
+		}
+
+		if (options.defaultName.trim().length === 0) {
+			options.defaultName = defaultSettings.options.defaultName
+		}
+
+		this.settings.autoRenameDebounceIntervalMs = Number.isFinite(
+			this.settings.autoRenameDebounceIntervalMs,
+		)
+			? Math.min(
+					Math.max(this.settings.autoRenameDebounceIntervalMs, AUTO_RENAME_DEBOUNCE_MIN_MS),
+					AUTO_RENAME_DEBOUNCE_MAX_MS,
+				)
+			: defaultSettings.autoRenameDebounceIntervalMs
 	}
 
 	openSettingsTab() {
@@ -264,7 +291,7 @@ export default class RenamiPlugin extends Plugin {
 
 		// Save stats and update the settings tab
 		await this.saveSettings()
-		this.settingsTab.render()
+		this.settingsTab.update()
 	}, this.settings.autoRenameDebounceIntervalMs)
 
 	// ----------------------------------------------------
