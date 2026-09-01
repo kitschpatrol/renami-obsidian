@@ -25,7 +25,6 @@ import sindreDebounce from 'debounce'
 import path from 'node:path' // Assuming polyfilled
 import {
 	FileSystemAdapter,
-	moment,
 	normalizePath,
 	Notice,
 	Plugin,
@@ -35,18 +34,18 @@ import {
 	Vault,
 } from 'obsidian'
 
-const DRIVE_LETTER_REGEX = /^[A-Z]:/i
-const GLOB_REGEX = /\/\*\*\/\*\.\w+$/
+const DRIVE_LETTER_REGEX = /^[A-Z]:/iv
+const GLOB_REGEX = /\/\*\*\/\*\.\w+$/v
 
 export default class RenamiPlugin extends Plugin {
-	public settings: RenamiPluginSettings = getRenamiPluginDefaultSettings()
+	public override settings: RenamiPluginSettings = getRenamiPluginDefaultSettings()
 	private readonly settingsTab: RenamiPluginSettingTab = new RenamiPluginSettingTab(this.app, this)
 
 	// ----------------------------------------------------
 
 	// Initialization
 
-	async onload() {
+	override async onload() {
 		// Bindings
 		this.fileAdapterWrite = this.fileAdapterWrite.bind(this)
 		this.fileAdapterRead = this.fileAdapterRead.bind(this)
@@ -109,8 +108,8 @@ export default class RenamiPlugin extends Plugin {
 
 	// Typed override
 	// eslint-disable-next-line ts/no-restricted-types
-	async loadData(): Promise<null | RenamiPluginSettings> {
-		// eslint-disable-next-line ts/no-restricted-types, ts/no-unsafe-type-assertion
+	override async loadData(): Promise<null | RenamiPluginSettings> {
+		// eslint-disable-next-line ts/no-restricted-types
 		const settings = (await super.loadData()) as null | RenamiPluginSettings
 		return settings
 	}
@@ -146,7 +145,7 @@ export default class RenamiPlugin extends Plugin {
 	}
 
 	// This never seems to fire, even after manually editing the settings file?
-	async onExternalSettingsChange() {
+	override async onExternalSettingsChange() {
 		if (this.settings.verboseNotices) {
 			// TODO when is this actually called?
 			new Notice('External settings changed')
@@ -234,8 +233,8 @@ export default class RenamiPlugin extends Plugin {
 				new Notice(formatRenameReport(report, this.settings.verboseNotices), 15_000)
 			}
 
-			// Dev stats
-			this.settings.stats.latestRenameTime = moment().unix()
+			// Dev stats, unix time in seconds
+			this.settings.stats.latestRenameTime = Math.floor(Date.now() / 1000)
 			this.settings.stats.duration =
 				this.settings.stats.duration === 0
 					? report.duration
@@ -432,19 +431,19 @@ export default class RenamiPlugin extends Plugin {
 	}
 
 	private async handleDelete(fileOrFolder: TAbstractFile) {
-		if (
-			this.isInsideWatchedFolders(fileOrFolder) && // Remove from settings if it was a watched folder
-			fileOrFolder instanceof TFolder
-		) {
-			const initialLength = this.settings.folders.length
+		// Remove from settings if it was a watched folder
+		if (!this.isInsideWatchedFolders(fileOrFolder) || !(fileOrFolder instanceof TFolder)) {
+			return
+		}
 
-			this.settings.folders = this.settings.folders.filter(
-				({ folderPath }) => folderPath !== fileOrFolder.path,
-			)
+		const initialLength = this.settings.folders.length
 
-			if (this.settings.folders.length !== initialLength) {
-				await this.saveSettings()
-			}
+		this.settings.folders = this.settings.folders.filter(
+			({ folderPath }) => folderPath !== fileOrFolder.path,
+		)
+
+		if (this.settings.folders.length !== initialLength) {
+			await this.saveSettings()
 		}
 	}
 
@@ -518,24 +517,26 @@ export default class RenamiPlugin extends Plugin {
 	// Does not have a trailing slash
 	private getVaultBasePath(): string | undefined {
 		const { adapter } = this.app.vault
-		if (adapter instanceof FileSystemAdapter) {
-			// We want the Windows slash-reversing effects of normalize, but not the
-			// removal of the leading / from the path on POSIX systems. Split the
-			// difference, detect drive letters and append if missing. Forsake Windows
-			// extended paths for now.
-			// https://forum.obsidian.md/t/how-to-get-vault-absolute-path/22965/3
-			// https://forum.obsidian.md/t/normalizepath-removes-a-leading/24713
-			// https://github.com/Taitava/obsidian-shellcommands/issues/44
-			//
-			// Desired form is:
-			// - Windows: "C:/path/to/vault"
-			// - POSIX: "/path/to/vault"
-			const possiblyBarePath = normalizePath(adapter.getBasePath())
-
-			return DRIVE_LETTER_REGEX.test(possiblyBarePath)
-				? possiblyBarePath
-				: path.join(path.sep, possiblyBarePath)
+		if (!(adapter instanceof FileSystemAdapter)) {
+			return undefined
 		}
+
+		// We want the Windows slash-reversing effects of normalize, but not the
+		// removal of the leading / from the path on POSIX systems. Split the
+		// difference, detect drive letters and append if missing. Forsake Windows
+		// extended paths for now.
+		// https://forum.obsidian.md/t/how-to-get-vault-absolute-path/22965/3
+		// https://forum.obsidian.md/t/normalizepath-removes-a-leading/24713
+		// https://github.com/Taitava/obsidian-shellcommands/issues/44
+		//
+		// Desired form is:
+		// - Windows: "C:/path/to/vault"
+		// - POSIX: "/path/to/vault"
+		const possiblyBarePath = normalizePath(adapter.getBasePath())
+
+		return DRIVE_LETTER_REGEX.test(possiblyBarePath)
+			? possiblyBarePath
+			: path.join(path.sep, possiblyBarePath)
 	}
 
 	private vaultPathToAbsolutePath(vaultPath: string): string {
@@ -554,7 +555,7 @@ export default class RenamiPlugin extends Plugin {
 
 		// Regex escape here addresses
 		// https://github.com/kitschpatrol/yanki-obsidian/issues/28
-		const basePathRegex = new RegExp(`^${escapeStringRegexp(vaultPath)}/?`)
+		const basePathRegex = new RegExp(`^${escapeStringRegexp(vaultPath)}/?`, 'v')
 
 		const resolved = absolutePath.replace(basePathRegex, '')
 

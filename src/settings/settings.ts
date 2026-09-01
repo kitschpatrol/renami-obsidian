@@ -47,26 +47,26 @@ export function getRenamiPluginDefaultSettings(): RenamiPluginSettings {
 
 export class RenamiPluginSettingTab extends PluginSettingTab {
 	private initialSettings: RenamiPluginSettings = getRenamiPluginDefaultSettings()
-	plugin: RenamiPlugin
+	override plugin: RenamiPlugin
 
 	constructor(app: App, plugin: RenamiPlugin) {
 		super(app, plugin)
 		this.plugin = plugin
 	}
 
-	display(): void {
+	override display(): void {
 		this.initialSettings = structuredClone(this.plugin.settings)
 		this.containerEl.addClass('renami-settings')
 		this.containerEl.setAttr('id', 'renami-settings')
 		this.render()
 	}
 
-	async hide(): Promise<void> {
+	override hide(): void {
 		// Normalize folders
 		this.plugin.settings.folders = this.plugin.getSanitizedFolders()
 
 		// Do any pre-commit settings validation here
-		await this.plugin.settingsChangeCheck(this.initialSettings)
+		void this.plugin.settingsChangeCheck(this.initialSettings)
 	}
 
 	public render(): void {
@@ -119,16 +119,16 @@ export class RenamiPluginSettingTab extends PluginSettingTab {
 				draggable: '.setting-item',
 				forceFallback: true, // Force old-school implementation to fix spill animation
 				handle: '.drag-handle',
-				onEnd: async (event) => {
+				onEnd: (event) => {
 					const { newIndex, oldIndex } = event
 
 					if (oldIndex !== undefined && newIndex !== undefined && oldIndex !== newIndex) {
-						this.plugin.settings.folders.splice(
-							newIndex,
-							0,
-							this.plugin.settings.folders.splice(oldIndex, 1)[0],
-						)
-						await this.plugin.saveSettings()
+						const [movedFolder] = this.plugin.settings.folders.splice(oldIndex, 1)
+
+						if (movedFolder !== undefined) {
+							this.plugin.settings.folders.splice(newIndex, 0, movedFolder)
+							void this.plugin.saveSettings()
+						}
 					}
 				},
 			})
@@ -156,14 +156,15 @@ export class RenamiPluginSettingTab extends PluginSettingTab {
 						.setPlaceholder('Select a folder')
 						.setValue(folder.folderPath)
 						.onChange((value) => {
-							this.plugin.settings.folders[index].folderPath = value
+							folder.folderPath = value
 						})
 
-					callback.inputEl.addEventListener('blur', async () => {
-						await this.plugin.saveSettings()
-						// Kludge for label re-rendering without a focus-stealing full
-						// re-render
-						updateAddFolderButton()
+					callback.inputEl.addEventListener('blur', () => {
+						void this.plugin.saveSettings().then(() => {
+							// Kludge for label re-rendering without a focus-stealing full
+							// re-render
+							updateAddFolderButton()
+						})
 					})
 				})
 				.setClass('folder-setting')
@@ -174,14 +175,15 @@ export class RenamiPluginSettingTab extends PluginSettingTab {
 					.setPlaceholder('Enter template string')
 					.setValue(folder.template)
 					.onChange((value) => {
-						this.plugin.settings.folders[index].template = value
+						folder.template = value
 					})
 
-				callback.inputEl.addEventListener('blur', async () => {
-					await this.plugin.saveSettings()
-					// Kludge for label re-rendering without a focus-stealing full
-					// re-render
-					updateAddFolderButton()
+				callback.inputEl.addEventListener('blur', () => {
+					void this.plugin.saveSettings().then(() => {
+						// Kludge for label re-rendering without a focus-stealing full
+						// re-render
+						updateAddFolderButton()
+					})
 				})
 			})
 
@@ -199,7 +201,7 @@ export class RenamiPluginSettingTab extends PluginSettingTab {
 			})
 		}
 
-		const addFolderButton = new Setting(this.containerEl)
+		const newFolderButtonSetting = new Setting(this.containerEl)
 			.addButton((button: ButtonComponent) => {
 				button
 					.setTooltip('Add folder')
@@ -217,7 +219,7 @@ export class RenamiPluginSettingTab extends PluginSettingTab {
 			.setClass('description-is-button-annotation')
 
 		const updateAddFolderButton = () => {
-			addFolderButton.setDesc(
+			newFolderButtonSetting.setDesc(
 				sanitizeHTMLToDom(
 					html`Notes found: <em>${String(this.plugin.getWatchedFiles().length)}</em>`,
 				),
@@ -260,7 +262,6 @@ export class RenamiPluginSettingTab extends PluginSettingTab {
 				.setValue(this.plugin.settings.options.caseType)
 				.onChange(async (value) => {
 					this.plugin.settings.options.caseType =
-						// eslint-disable-next-line ts/no-unsafe-type-assertion
 						value as typeof this.plugin.settings.options.caseType
 
 					await this.plugin.saveSettings()
@@ -303,8 +304,8 @@ export class RenamiPluginSettingTab extends PluginSettingTab {
 				this.plugin.settings.options.maxLength = Number(value)
 			})
 
-			text.inputEl.addEventListener('blur', async () => {
-				await this.plugin.saveSettings()
+			text.inputEl.addEventListener('blur', () => {
+				void this.plugin.saveSettings()
 			})
 		})
 
@@ -315,8 +316,8 @@ export class RenamiPluginSettingTab extends PluginSettingTab {
 				this.plugin.settings.options.truncationString = value
 			})
 
-			text.inputEl.addEventListener('blur', async () => {
-				await this.plugin.saveSettings()
+			text.inputEl.addEventListener('blur', () => {
+				void this.plugin.saveSettings()
 			})
 		})
 
@@ -347,8 +348,8 @@ export class RenamiPluginSettingTab extends PluginSettingTab {
 				this.plugin.settings.options.delimiter = value
 			})
 
-			text.inputEl.addEventListener('blur', async () => {
-				await this.plugin.saveSettings()
+			text.inputEl.addEventListener('blur', () => {
+				void this.plugin.saveSettings()
 			})
 		})
 
@@ -385,15 +386,18 @@ export class RenamiPluginSettingTab extends PluginSettingTab {
 				text.setPlaceholder(String(getRenamiPluginDefaultSettings().autoRenameDebounceIntervalMs))
 				text.setValue(String(this.plugin.settings.autoRenameDebounceIntervalMs))
 
-				text.inputEl.addEventListener('blur', async () => {
+				text.inputEl.addEventListener('blur', () => {
 					const maybeNumber = Number(text.getValue())
 
 					if (!Number.isNaN(maybeNumber)) {
-						this.plugin.settings.autoRenameDebounceIntervalMs = Math.clamp(maybeNumber, 100, 10_000)
+						this.plugin.settings.autoRenameDebounceIntervalMs = Math.min(
+							Math.max(maybeNumber, 100),
+							10_000,
+						)
 					}
 
 					text.setValue(String(this.plugin.settings.autoRenameDebounceIntervalMs))
-					await this.plugin.saveSettings()
+					void this.plugin.saveSettings()
 				})
 			})
 
@@ -447,7 +451,7 @@ export class RenamiPluginSettingTab extends PluginSettingTab {
 				text.setPlaceholder(getRenamiPluginDefaultSettings().options.defaultName)
 				text.setValue(this.plugin.settings.options.defaultName)
 
-				text.inputEl.addEventListener('blur', async () => {
+				text.inputEl.addEventListener('blur', () => {
 					const maybeText = text.getValue()
 
 					if (maybeText !== '') {
@@ -455,7 +459,7 @@ export class RenamiPluginSettingTab extends PluginSettingTab {
 					}
 
 					text.setValue(this.plugin.settings.options.defaultName)
-					await this.plugin.saveSettings()
+					void this.plugin.saveSettings()
 				})
 			})
 

@@ -63,7 +63,7 @@ div.renami-settings {
 
 			div.setting-item-description {
 				display: grid;
-				grid-template-columns: 1fr 1fr;
+				grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
 
 				p {
 					margin: 0;
@@ -82,6 +82,7 @@ div.renami-settings {
 	div.setting-item.description-is-button-annotation {
 		div.setting-item-info {
 			display: flex;
+			flex-wrap: wrap;
 			justify-content: flex-end;
 		}
 

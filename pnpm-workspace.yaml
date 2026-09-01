@@ -14,3 +14,5 @@ allowBuilds:
   esbuild: true
   oxc-resolver: true
   unrs-resolver: true
+minimumReleaseAgeExclude:
+  - '@kitschpatrol/renami@0.3.0'

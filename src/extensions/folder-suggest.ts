@@ -5,7 +5,7 @@ import { AbstractInputSuggest, TFolder } from 'obsidian'
 
 export class FolderSuggest extends AbstractInputSuggest<TFolder> {
 	inputElement: HTMLInputElement
-	app: App
+	override app: App
 
 	constructor(inputElement: HTMLInputElement, app: App) {
 		super(app, inputElement)
@@ -33,7 +33,7 @@ export class FolderSuggest extends AbstractInputSuggest<TFolder> {
 		element.setText(file.path)
 	}
 
-	selectSuggestion(file: TFolder): void {
+	override selectSuggestion(file: TFolder): void {
 		this.inputElement.value = file.path
 		this.inputElement.trigger('input')
 		this.close()

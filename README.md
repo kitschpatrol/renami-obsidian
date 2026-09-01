@@ -14,7 +14,7 @@
   }
 }) -->
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/license/mit/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/license/mit)
 [![CI](https://github.com/kitschpatrol/renami-obsidian/actions/workflows/ci.yml/badge.svg)](https://github.com/kitschpatrol/renami-obsidian/actions/workflows/ci.yml)
 [![GitHub Release](https://img.shields.io/github/v/release/kitschpatrol/renami-obsidian?label=Release)](https://github.com/kitschpatrol/renami-obsidian/releases/latest)
 
@@ -59,7 +59,7 @@ It provides extensively customizable, per-folder, template-based rules that can 
 
 1. **Prerequisites**
 
-   The [Obsidian desktop application](https://obsidian.md/download). (The Renami Obsidian plugin has been tested with Obsidian 1.12.4+ on macOS.)
+   The [Obsidian desktop application](https://obsidian.md/download). (The Renami Obsidian plugin has been tested with Obsidian 1.13.4+ on macOS.)
 
 2. **Plugin installation**
 
@@ -183,10 +183,10 @@ Available options:
 - lowercase
 - PascalCase
 - SCREAMING-KEBAB
-- SCREAMING_SNAKE
+- SCREAMING\_SNAKE
 - Sentence case
 - slug - _Convert to a URL-friendly slug._
-- snake_case
+- snake\_case
 - Title Case
 - UPPERCASE
 

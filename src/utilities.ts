@@ -14,8 +14,7 @@ export function formatRenameReport(renameReport: RenamiReport, verbose: boolean)
 	}
 
 	for (const { status } of files) {
-		if (status in statusReport) {
-			// eslint-disable-next-line ts/no-unsafe-type-assertion
+		if (Object.hasOwn(statusReport, status)) {
 			statusReport[status as keyof typeof statusReport]++
 		}
 	}
@@ -88,7 +87,7 @@ export function renamiFoldersEqual(a: RenamiFolder[], b: RenamiFolder[]): boolea
 		const folderB = b[i]
 
 		// If properties don't match at any index, return false.
-		if (folderA.folderPath !== folderB.folderPath || folderA.template !== folderB.template) {
+		if (folderA.folderPath !== folderB?.folderPath || folderA.template !== folderB.template) {
 			return false
 		}
 	}
@@ -104,11 +103,11 @@ export function capitalize(text: string): string {
  * Elements with class will call a function when clicked
  */
 export function sanitizeHtmlToDomWithFunction(
-	html: string,
+	htmlText: string,
 	targetClass: string,
 	callback: () => void,
 ) {
-	const fragment = sanitizeHTMLToDom(html)
+	const fragment = sanitizeHTMLToDom(htmlText)
 	const functionElement = fragment.querySelector(`.${targetClass}`)
 	functionElement?.addEventListener('click', callback)
 	return fragment
@@ -121,11 +120,10 @@ export function sanitizeHtmlToDomWithFunction(
  * @public
  */
 export function html(strings: TemplateStringsArray, ...values: unknown[]): string {
-	// eslint-disable-next-line unicorn/no-array-reduce
 	const conjoined = strings.reduce(
 		// eslint-disable-next-line ts/no-base-to-string
 		(result, text, i) => `${result}${text}${String(values[i] ?? '')}`,
 		'',
 	)
-	return conjoined.replaceAll(/\s+/g, ' ')
+	return conjoined.replaceAll(/\s+/gv, ' ')
 }

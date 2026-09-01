@@ -5,11 +5,13 @@ import { copy } from 'esbuild-plugin-copy'
 import fs from 'node:fs/promises'
 import process from 'node:process'
 
-// We assume our minimum specified Obsidian version 1.8.9 correlates with the
-// following:
-//   - https://github.com/obsidianmd/obsidian-releases/releases/tag/v1.9.14
-//   - https://releases.electronjs.org/release/v37.6.0
-// This release is using Electron 37.6.0 , Chromium 138.0.7204.251, V8 13.8.258.32, and Node 22.19.0
+// The plugin requires Obsidian 1.13.4+ (see manifest `minAppVersion`), but
+// that gates the app version, not the installer: older installers with older
+// Electron / Chromium runtimes can still run newer app versions. The newest
+// syntax we emit is the ES2024 `v` regex flag, supported since Chromium 112
+// (2023-era installers). For reference, the Obsidian 1.13.4 installer ships
+// Electron 43.1.1 with Chromium 150 and Node 24.18:
+//   - https://releases.electronjs.org/release/v43.1.1
 
 const banner = `/*
 This is a generated source file!
@@ -18,6 +20,9 @@ https://github.com/kitschpatrol/renami-obsidian
 */
 `
 
+// The onResolve filter is translated by esbuild into a Go regular expression,
+// which rejects JavaScript's unicode flags
+// eslint-disable-next-line require-unicode-regexp
 const NODE_MODULE_PREFIX_REGEX = /^node:.+$/
 
 const ignoreNodeModulesPlugin: Plugin = {
@@ -120,7 +125,7 @@ const context = await esbuild.context({
 		}),
 	],
 	sourcemap: production ? false : 'inline',
-	target: 'es2020',
+	target: 'es2024',
 	treeShaking: true,
 })
 
@@ -167,25 +172,26 @@ async function triggerRebuild(): Promise<void> {
 	}
 }
 
+// Perform an initial rebuild and copy.
+await triggerRebuild()
+
 if (production) {
-	await triggerRebuild()
 	// eslint-disable-next-line unicorn/no-process-exit
 	process.exit(0)
-} else {
-	// Perform an initial rebuild and copy.
-	await triggerRebuild()
-
-	console.log('Watching for changes using chokidar...')
-	// Set up the file watcher on the 'src' directory, ignoring initial add events.
-	const watcher = chokidar.watch('src', { ignoreInitial: true })
-
-	// On any file change, debounce and trigger a rebuild.
-	watcher.on('all', (event, path) => {
-		console.log(`Detected ${event} on ${path}. Scheduling rebuild...`)
-		if (rebuildTimeout) {
-			clearTimeout(rebuildTimeout)
-		}
-
-		rebuildTimeout = setTimeout(triggerRebuild, 100)
-	})
 }
+
+console.log('Watching for changes using chokidar...')
+// Set up the file watcher on the 'src' directory, ignoring initial add events.
+const watcher = chokidar.watch('src', { ignoreInitial: true })
+
+// On any file change, debounce and trigger a rebuild.
+watcher.on('all', (event, path) => {
+	console.log(`Detected ${event} on ${path}. Scheduling rebuild...`)
+	if (rebuildTimeout) {
+		clearTimeout(rebuildTimeout)
+	}
+
+	rebuildTimeout = setTimeout(() => {
+		void triggerRebuild()
+	}, 100)
+})
