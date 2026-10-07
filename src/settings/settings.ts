@@ -202,13 +202,15 @@ export class RenamiPluginSettingTab extends PluginSettingTab {
 				onReorder: (oldIndex, newIndex) => {
 					const [movedFolder] = this.plugin.settings.folders.splice(oldIndex, 1)
 
-					if (movedFolder !== undefined) {
-						this.blurActiveElement()
-						this.plugin.settings.folders.splice(newIndex, 0, movedFolder)
-						void this.plugin.saveSettings().then(() => {
-							this.update()
-						})
+					if (movedFolder === undefined) {
+						return
 					}
+
+					this.blurActiveElement()
+					this.plugin.settings.folders.splice(newIndex, 0, movedFolder)
+					void this.plugin.saveSettings().then(() => {
+						this.update()
+					})
 				},
 				type: 'list',
 			},

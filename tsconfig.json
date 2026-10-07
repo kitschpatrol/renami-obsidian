@@ -3,8 +3,7 @@
 	"compilerOptions": {
 		"target": "es2024",
 		"lib": ["es2024", "DOM", "DOM.Iterable"],
-		"types": ["obsidian-typings", "node"],
-		"importHelpers": true
+		"types": ["obsidian-typings", "node"]
 	},
 	"include": ["**/**.*"],
 	"exclude": ["dist/"]

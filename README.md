@@ -4,15 +4,7 @@
 
 <!-- /title -->
 
-<!-- badges ({
-  npm: [],
-  custom: {
-    "GitHub Release": {
-      image: "https://img.shields.io/github/v/release/kitschpatrol/renami-obsidian?label=Release",
-      link: "https://github.com/kitschpatrol/renami-obsidian/releases/latest",
-    },
-  }
-}) -->
+<!-- badges({ githubRelease: true }) -->
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/license/mit)
 [![CI](https://github.com/kitschpatrol/renami-obsidian/actions/workflows/ci.yml/badge.svg)](https://github.com/kitschpatrol/renami-obsidian/actions/workflows/ci.yml)
@@ -22,7 +14,7 @@
 
 <!-- short-description -->
 
-**An Obsidian plugin for content-aware automatic note name management.**
+**Obsidian plugin for content-aware automatic note name management.**
 
 <!-- /short-description -->
 
@@ -183,10 +175,10 @@ Available options:
 - lowercase
 - PascalCase
 - SCREAMING-KEBAB
-- SCREAMING\_SNAKE
+- SCREAMING_SNAKE
 - Sentence case
 - slug - _Convert to a URL-friendly slug._
-- snake\_case
+- snake_case
 - Title Case
 - UPPERCASE
 

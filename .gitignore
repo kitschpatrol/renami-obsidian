@@ -3,13 +3,17 @@
 
 # @kitschpatrol/repo-config boilerplate
 !.env.example
+.agents/
 .astro/
+.claude/
 .DS_Store
 .env
 .env.*
 .eslint-config-inspector
 .pnpm-store/
 .svelte-kit/
+.vitest/
+.worktrees/
 {tmp,temp}/
 **/*.min.js
 /scratch/
@@ -18,6 +22,7 @@ build/
 coverage/
 dist/
 node_modules/
+skills-lock.json
 vendor/
 
 # Customizations
@@ -28,4 +33,3 @@ data.json
 resources/
 /examples/Renami Demo Vault/.obsidian/workspace.json
 /examples/Renami Demo Vault/.obsidian/plugins/renami
-.claude/

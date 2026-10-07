@@ -54,7 +54,7 @@ jobs:
           fi
 
       - name: Install pnpm
-        uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6
+        uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
 
       - name: Setup Node.js
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
@@ -83,12 +83,12 @@ jobs:
       - name: Release Notes
         if: env.IS_VALID_COMMIT == 'true'
         id: release-notes
-        uses: kitschpatrol/github-action-release-changelog@v2
+        uses: kitschpatrol/github-action-release-changelog@12279a22cf9d0b432dca8ff189d82ad0dd393345 # v2.0.9
 
       - name: Release
         if: env.IS_VALID_COMMIT == 'true'
         id: release
-        uses: kitschpatrol/github-action-release@v2
+        uses: kitschpatrol/github-action-release@8eec249579033fc4c9f18f9a7acf3beed6c84882 # v2
         with:
           token: ${{ env.ACCESS_TOKEN }}
           draft: false
