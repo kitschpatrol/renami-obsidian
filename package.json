@@ -41,7 +41,7 @@
 	},
 	"devDependencies": {
 		"@kitschpatrol/renami": "^0.3.2",
-		"@kitschpatrol/shared-config": "^8.12.1",
+		"@kitschpatrol/shared-config": "^8.13.1",
 		"@types/node": "^24.13.3",
 		"bumpp": "^12.3.0",
 		"chokidar": "^5.0.0",
