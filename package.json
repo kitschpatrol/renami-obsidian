@@ -39,7 +39,7 @@
 		"test": "echo \"No tests specified\" && exit 0"
 	},
 	"devDependencies": {
-		"@kitschpatrol/renami": "^0.3.3",
+		"@kitschpatrol/renami": "^0.3.4",
 		"@kitschpatrol/shared-config": "^8.14.0",
 		"@types/node": "~24.13.6",
 		"bumpp": "^12.3.0",
