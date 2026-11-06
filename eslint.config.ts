@@ -7,7 +7,7 @@ export default eslintConfig(
 				'html/no-inline-styles': 'off',
 			},
 		},
-		ignores: ['examples/Renami Demo Vault/*'],
+		ignores: ['examples/Renami Demo Vault/*', '**/changelog.md'],
 		ts: {
 			overrides: {
 				'jsdoc/require-jsdoc': 'off',

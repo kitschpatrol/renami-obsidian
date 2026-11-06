@@ -1,3 +1,3 @@
 import { cspellConfig } from '@kitschpatrol/cspell-config'
 
-export default cspellConfig({ words: ['iconize'] })
+export default cspellConfig({ ignorePaths: ['**/changelog.md'], words: ['chagent', 'iconize'] })
